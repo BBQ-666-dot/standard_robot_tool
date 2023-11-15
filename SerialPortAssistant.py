@@ -33,7 +33,52 @@ MAX_DATA_STORAGE_LENGTH = 5000
 MIN_SAMPLES_NUMBER_DELTA = 10
 
 
+class WaveFormCanavas(FigureCanvasTkAgg):
+    '''波形图画布'''
+    def __init__(self, master=None, width=5, height=4, dpi=100):
+        self.fig = plt.figure(figsize=(width, height), dpi=dpi)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.set_xlabel('time(s)')
+        self.ax.set_ylabel('data')
+        self.ax.set_title('Waveform')
+        self.x = []
+        self.y = []
+        self.plot, = self.ax.plot(self.x, self.y)
+        self.ax.grid()
+        self.ax.set_xlim(0, 10)
+        self.ax.set_ylim(-1, 1)
+        self.ax.set_autoscale_on(False)
+        self.ax.set_xticks(np.linspace(0, 10, 11))
+        self.ax.set_yticks(np.linspace(-1, 1, 11))
+        self.ax.set_xticklabels(np.linspace(0, 10, 11))
+        self.ax.set_yticklabels(np.linspace(-1, 1, 11))
+        self.ax.tick_params(labelsize=8)
+        self.ax.legend()
+        self.ax.grid(True)
+        super().__init__(self.fig, master=master)
+        self.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+    def plot(self, x, y):
+        self.x.append(x)
+        self.y.append(y)
+        self.plot.set_data(self.x, self.y)
+        self.ax.set_xlim(self.x[0], self.x[-1])
+        self.draw()
+
+
+
+class ReceivedDataList(tk.Listbox):
+    '''接收数据列表'''
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+    
+    def UpdateDataList(self,data_list:list) -> None:
+        self.delete(0, tk.END)#考虑到短时间内不会大量更新数据表并且数据量普遍较小，所以每次都清空再添加
+        for data_name in data_list:
+            self.insert(tk.END, data_name)
+    
+        
+        
 class SerialPortAssistant():
     """
 串口助手APP的主类\n
@@ -112,7 +157,7 @@ class SerialPortAssistant():
     def InitUI(self):
         '''初始化UI'''
         self.root.title('Serial Port Assistant  ' + self.version)
-        self.root.geometry('1330x650')
+        self.root.geometry('1450x650')
         self.root.resizable(0,0)
         
         self.InitMenu()
@@ -141,6 +186,11 @@ class SerialPortAssistant():
     
     def BlankFunction(self):
         '''空函数，用于占位'''
+        pass
+    
+    
+    def SaveReceivedDatas(self):
+        # TODO：添加保存数据的功能
         pass
     
     
@@ -193,6 +243,7 @@ class SerialPortAssistant():
         
     def InitFrame(self):
         '''初始化内部组件'''
+        # TODO：添加显示所有接受到的数据名称的列表
         #root
         Frame_Plot = tk.Frame(
                         self.root,
@@ -204,7 +255,7 @@ class SerialPortAssistant():
                         Frame_Plot,
                         #relief='groove',bd=1
                     )
-        Frame_Plot_Param.pack(side=tk.TOP)
+        Frame_Plot_Param.pack(side=tk.LEFT)
         #root/Frame_Plot/Frame_Plot_Param
         Label_Set_Output_Data_Label = tk.Label(
                         Frame_Plot_Param,
@@ -213,7 +264,7 @@ class SerialPortAssistant():
                         width=17,height=1,
                         anchor='w'
                     )
-        Label_Set_Output_Data_Label.pack(side=tk.LEFT)
+        Label_Set_Output_Data_Label.pack(side=tk.TOP)
         #root/Frame_Plot/Frame_Plot_Param
         self.Combobox_Output_Data_Label = tkinter.ttk.Combobox(
                         Frame_Plot_Param,
@@ -223,15 +274,19 @@ class SerialPortAssistant():
                         postcommand=self.BlankFunction,
                         state='readonly'
                     )
-        self.Combobox_Output_Data_Label.pack(side=tk.LEFT)
+        self.Combobox_Output_Data_Label.pack(side=tk.TOP)
         self.Combobox_Output_Data_Label.current(0)
+        
+
         
         #root/Frame_Plot
         Frame_Plot_Area = tk.Frame(
                         Frame_Plot,
                         #relief='groove',bd=1
                     )
-        Frame_Plot_Area.pack(side=tk.TOP)
+        Frame_Plot_Area.pack(side=tk.RIGHT)
+        
+        
         #root/Frame_Plot/Frame_Plot_Area
         self.canvas = FigureCanvasTkAgg(
                         figure=self.fig_2d, 
@@ -771,6 +826,7 @@ class SerialPortAssistant():
         # x = np.linspace(0, 2 * np.pi, 100)
         # y = np.sin(x)+np.random.rand(100)/10
         
+        # TODO：将选择的图像数据显示在图像上
         x = [(data_dict.get('time') - self.start_time).total_seconds() for data_dict in self.data_storage]
         y = [data_dict.get(self.Combobox_Output_Data_Label.get()) for data_dict in self.data_storage]
         
