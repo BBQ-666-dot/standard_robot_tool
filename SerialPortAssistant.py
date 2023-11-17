@@ -33,6 +33,12 @@ MAX_DATA_STORAGE_LENGTH = 5000
 MIN_SAMPLES_NUMBER_DELTA = 10
 
 
+def BlankFunction():
+    '''空函数，用于占位'''
+    print('BlankFunction')
+
+
+
 class WaveFormCanavas(FigureCanvasTkAgg):
     '''波形图画布'''
     def __init__(self, master=None, width=5, height=4, dpi=100):
@@ -76,9 +82,205 @@ class ReceivedDataList(tk.Listbox):
         self.delete(0, tk.END)#考虑到短时间内不会大量更新数据表并且数据量普遍较小，所以每次都清空再添加
         for data_name in data_list:
             self.insert(tk.END, data_name)
+
+
+
+class SerialPortModel(tk.Frame):
+    '''串口模块，包含了串口参数设置的UI以及串口的打开/关闭按钮'''
+    def __init__(self, 
+                 master=None, 
+                 **kwargs) -> None:
+        super().__init__(master, **kwargs)
+        self.available_ports = []#可用端口列表
+        self.sample_number = tk.IntVar()#采样点个数
+        self.sample_number.set(1000)
+        self.serial_data_read_module = spl.Serial_Data_Read()#串口数据读取模块
+        self.received_header = tk.StringVar()
+        self.received_header.set('6A')
+        self.data_storage = []
+        
+        self.port_is_open = False
+        self.is_receive_data = False
+        
+        
     
+    def AddWidget(self) -> None:
+        '''添加组件'''
+        Label_Set_Port = tk.Label(
+                        self,
+                        text='设置端口信息:',
+                        font=('黑体', 12),
+                        width=24,height=1,
+                        anchor='w'
+                    )
+        Label_Set_Port.pack(side=tk.TOP)
+
+        Frame_Port = tk.Frame(
+                        self,
+                    )
+        Frame_Port.pack(side=tk.TOP)
+
+        Label_Port = tk.Label(
+                        Frame_Port,
+                        text='端口号:',
+                        font=('黑体', 12),
+                        width=10,height=1,
+                        anchor='w'
+                    )
+        Label_Port.pack(side=tk.LEFT)
+
+        self.Combobox_Port = tkinter.ttk.Combobox(
+                        Frame_Port,
+                        width=10,height=1,
+                        font=('Arial', 12),
+                        values=list(list(zip(*list(map(list,self.available_ports))))[0]) if len(self.available_ports) > 0 else ['无可用端口'],
+                        postcommand = self.UpdateSerialPortList,
+                        state='readonly'
+                    )
+        self.Combobox_Port.pack(side=tk.RIGHT)
+        self.Combobox_Port.current(0)
         
+        Frame_Baud_Rate = tk.Frame(
+                        self,
+                    )
+        Frame_Baud_Rate.pack(side=tk.TOP)
+
+        Label_Baud_Rate = tk.Label(
+                        Frame_Baud_Rate,
+                        text='波特率:',
+                        font=('黑体', 12),
+                        width=10,height=1,
+                        anchor='w'
+                    )
+        Label_Baud_Rate.pack(side=tk.LEFT)
+
+        self.Combobox_Baud_Rate = tkinter.ttk.Combobox(
+                        Frame_Baud_Rate,
+                        width=10,height=1,
+                        font=('Arial', 12),
+                        values=[9600,115200],
+                        state='readonly'
+                    )
+        self.Combobox_Baud_Rate.pack(side=tk.RIGHT)
+        self.Combobox_Baud_Rate.current(1)
+
+
+
+        Frame_Samples_Number = tk.Frame(
+                        self,
+                    )
+        Frame_Samples_Number.pack(side=tk.TOP)
+
+        Label_Samples_Number = tk.Label(
+                        Frame_Samples_Number,
+                        text='采样点个数:',
+                        font=('黑体', 12),
+                        width=11,height=1,
+                        anchor='w'
+                    )
+        Label_Samples_Number.pack(side=tk.LEFT)
+
+        self.Entry_Samples_Number = tk.Entry(
+                        Frame_Samples_Number,
+                        width=11,
+                        font=('Arial', 12),
+                        textvariable=self.sample_number,
+                        state='normal'
+                    )
+        self.Entry_Samples_Number.pack(side=tk.RIGHT)
+        self.Entry_Samples_Number.bind('<MouseWheel>',self.Entry_Samples_Number_OnMouseScroll)
+                        
         
+        Frame_On_Off_Port = tk.Frame(
+                        self,
+                    )
+        Frame_On_Off_Port.pack(side=tk.TOP)
+
+        self.Label_On_Off_Port = tk.Label(
+                        Frame_On_Off_Port,
+                        width=2,height=1,
+                        bg='red'
+                    )
+        self.Label_On_Off_Port.pack(side=tk.LEFT)
+
+        self.Button_On_Off_Port = tk.Button(
+                        Frame_On_Off_Port,
+                        text='打开端口',
+                        font=('黑体', 12),
+                        width=10,height=1,
+                        command=self.On_Off_Port_Click
+                    )
+        self.Button_On_Off_Port.pack(side=tk.RIGHT)
+
+
+    def Entry_Samples_Number_OnMouseScroll(self,event):
+        '''鼠标滚轮滚动时增减采样点个数'''
+        self.sample_number.set(self.sample_number.get()+event.delta//120*MIN_SAMPLES_NUMBER_DELTA)
+
+
+    def UpdateSerialPortList(self):
+        '''更新串口列表'''
+        # 获取可用的串口端口信息
+        self.available_ports = serial.tools.list_ports.comports()
+        port_name_list = list(list(zip(*list(map(list,self.available_ports))))[0]) if len(self.available_ports) > 0 else ['无可用端口']
+        self.Combobox_Port.configure(values=port_name_list)
+        if self.Combobox_Port.get() not in port_name_list:
+            self.Combobox_Port.current(0)
+
+
+    def On_Off_Port_Click(self):
+        '''打开/关闭串口'''
+        if self.Button_On_Off_Port['text'] == '打开端口':
+            #传入参数
+            self.data_storage.clear()
+            self.serial_data_read_module.port_name = None if self.Combobox_Port.get() == '无可用端口'else self.Combobox_Port.get()
+            self.serial_data_read_module.baud_rate = int(self.Combobox_Baud_Rate.get())
+            self.serial_data_read_module.received_header = self.received_header.get()
+            #打开串口
+            serial_port_is_open = self.serial_data_read_module.OpenSerialPort()
+            if serial_port_is_open:
+                self.port_is_open = True
+                self.Button_On_Off_Port['text'] = '关闭端口'
+                self.Label_On_Off_Port['bg'] = 'green'
+                
+                #设置状态
+                self.Combobox_Port.configure(state='disabled')
+                self.Combobox_Baud_Rate.configure(state='disabled')
+                
+                #开始接收数据
+                self.is_receive_data = True
+                # self.Receive_Data()
+                # self.UpdateDataLabels()#更新接收数据的标签
+                # self.UpdateGraph()
+                
+            else:
+                #在输出的信息框中显示错误信息
+                pass
+        else:
+            serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
+            if serial_port_is_not_open:
+                self.port_is_open = False
+                self.is_receive_data = False
+                self.Button_On_Off_Port['text'] = '打开端口'
+                self.Label_On_Off_Port['bg'] = 'red'
+                #设置状态
+                self.Combobox_Port.configure(state='readonly')
+                self.Combobox_Baud_Rate.configure(state='readonly')
+                # self.Text_SendData_Structure.configure(state='normal')
+                #更新串口列表
+                self.UpdateSerialPortList()
+                #清除储存的数据
+                self.data_storage.clear()
+                self.start_time = None
+            else:
+                #在输出的信息框中显示错误信息
+                pass
+            
+            
+    def BlankFunction(self):
+        '''空函数，用于占位'''
+        pass
+
 class SerialPortAssistant():
     """
 串口助手APP的主类\n
@@ -166,7 +368,7 @@ class SerialPortAssistant():
         
     def InitParameter(self):
         '''初始化参数'''
-        self.UpdateSerialPortList()
+        # self.UpdateSerialPortList()
     
     
     def MonitoringReceviedHeaderVariableChanges(self,*args):
@@ -308,124 +510,14 @@ class SerialPortAssistant():
                         #relief='groove',bd=1
                     )
         Frame_Right.pack(side=tk.RIGHT)
-        #root/Frame_Right
-        Frame_Port_Param = tk.Frame(
-                        Frame_Right,
-                        #relief='groove',bd=1
-                    )
-        Frame_Port_Param.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Port_Param
-        Label_Set_Port = tk.Label(
-                        Frame_Port_Param,
-                        text='设置端口信息:',
-                        font=('黑体', 12),
-                        width=24,height=1,
-                        anchor='w'
-                    )
-        Label_Set_Port.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Port_Param
-        Frame_Port = tk.Frame(
-                        Frame_Port_Param,
-                        #relief='groove',bd=1
-                    )
-        Frame_Port.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Port_Param/Frame_Port
-        Label_Port = tk.Label(
-                        Frame_Port,
-                        text='端口号:',
-                        font=('黑体', 12),
-                        width=10,height=1,
-                        anchor='w'
-                    )
-        Label_Port.pack(side=tk.LEFT)
-        #root/Frame_Right/Frame_Port_Param/Frame_Port
-        self.Combobox_Port = tkinter.ttk.Combobox(
-                        Frame_Port,
-                        width=10,height=1,
-                        font=('Arial', 12),
-                        values=list(list(zip(*list(map(list,self.available_ports))))[0]) if len(self.available_ports) > 0 else ['无可用端口'],
-                        postcommand = self.UpdateSerialPortList,
-                        state='readonly'
-                    )
-        self.Combobox_Port.pack(side=tk.RIGHT)
-        self.Combobox_Port.current(0)
         
-        #root/Frame_Right/Frame_Port_Param
-        Frame_Baud_Rate = tk.Frame(
-                        Frame_Port_Param,
-                        #relief='groove',bd=1
-                    )
-        Frame_Baud_Rate.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Port_Param/Frame_Baud_Rate
-        Label_Baud_Rate = tk.Label(
-                        Frame_Baud_Rate,
-                        text='波特率:',
-                        font=('黑体', 12),
-                        width=10,height=1,
-                        anchor='w'
-                    )
-        Label_Baud_Rate.pack(side=tk.LEFT)
-        #root/Frame_Right/Frame_Port_Param/Frame_Baud_Rate
-        self.Combobox_Baud_Rate = tkinter.ttk.Combobox(
-                        Frame_Baud_Rate,
-                        width=10,height=1,
-                        font=('Arial', 12),
-                        values=[9600,115200],
-                        state='readonly'
-                    )
-        self.Combobox_Baud_Rate.pack(side=tk.RIGHT)
-        self.Combobox_Baud_Rate.current(1)
+        #串口设置模块
+        self.serial_port_model = SerialPortModel(Frame_Right)
+        self.serial_port_model.AddWidget()
+        self.serial_port_model.pack(side=tk.TOP)
 
 
-        #root/Frame_Right/Frame_Port_Param
-        Frame_Samples_Number = tk.Frame(
-                        Frame_Port_Param,
-                        #relief='groove',bd=1
-                    )
-        Frame_Samples_Number.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Port_Param/Frame_Samples_Number
-        Label_Samples_Number = tk.Label(
-                        Frame_Samples_Number,
-                        text='采样点个数:',
-                        font=('黑体', 12),
-                        width=11,height=1,
-                        anchor='w'
-                    )
-        Label_Samples_Number.pack(side=tk.LEFT)
-        #root/Frame_Right/Frame_Port_Param/Frame_Samples_Number
-        self.Entry_Samples_Number = tk.Entry(
-                        Frame_Samples_Number,
-                        width=11,
-                        font=('Arial', 12),
-                        textvariable=self.sample_number,
-                        state='normal'
-                    )
-        self.Entry_Samples_Number.pack(side=tk.RIGHT)
-        self.Entry_Samples_Number.bind('<MouseWheel>',self.Entry_Samples_Number_OnMouseScroll)
-                        
-        
-        #root/Frame_Right/Frame_Port_Param
-        Frame_On_Off_Port = tk.Frame(
-                        Frame_Port_Param,
-                        #relief='groove',bd=1
-                    )
-        Frame_On_Off_Port.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Port_Param/Frame_On_Off_Port
-        self.Label_On_Off_Port = tk.Label(
-                        Frame_On_Off_Port,
-                        width=2,height=1,
-                        bg='red'
-                    )
-        self.Label_On_Off_Port.pack(side=tk.LEFT)
-        #root/Frame_Right/Frame_Port_Param/Frame_On_Off_Port
-        self.Button_On_Off_Port = tk.Button(
-                        Frame_On_Off_Port,
-                        text='打开端口',
-                        font=('黑体', 12),
-                        width=10,height=1,
-                        command=self.On_Off_Port
-                    )
-        self.Button_On_Off_Port.pack(side=tk.RIGHT)
+
         
         #root/Frame_Right
         Frame_Data_Structure = tk.Frame(
