@@ -535,6 +535,113 @@ class SendDataModel(tk.Frame):
 
 
 
+class ReceiveDataModel(tk.Frame):
+    '''数据发送模块，包含了数据发送的一些设置'''
+    def __init__(self, master=None, **kwargs) -> None:
+        super().__init__(master, **kwargs)
+
+
+    def AddWidget(self):
+        # Frame_Output_Data = tk.Frame(
+        #                 Frame_Right,
+        #                 #relief='groove',bd=1
+        #             )
+        # Frame_Output_Data.pack(side=tk.TOP)
+        Frame_State_Choose = tk.Frame(
+                        self,
+                        #relief='groove',bd=1
+                    )
+        Frame_State_Choose.pack(side=tk.TOP)
+
+        Label_Set_Output_Text = tk.Label(
+                        Frame_State_Choose,
+                        text='选择输出文本的设置:',
+                        font=('黑体', 12),
+                        width=30,height=1,
+                        anchor='w'
+                    )
+        Label_Set_Output_Text.pack(side=tk.TOP)
+
+        Frame_State_Choose_Line_1 = tk.Frame(
+                        Frame_State_Choose,
+                        #relief='groove',bd=1
+                    )
+        Frame_State_Choose_Line_1.pack(side=tk.TOP)
+
+        self.Combobox_Show_State = tkinter.ttk.Combobox(
+                        Frame_State_Choose_Line_1,
+                        width=12,height=1,
+                        font=('黑体', 12),
+                        values=['解码后的数据','原始数据(16)','原始数据(2)'],
+                        # state='readonly'
+                        state='disabled'
+                    )
+        self.Combobox_Show_State.bind("<<ComboboxSelected>>", self.Combobox_Show_State_Selected)
+        self.Combobox_Show_State.pack(side=tk.LEFT,padx=2)
+        self.Combobox_Show_State.current(0)
+
+        self.Combobox_Add_Timestamp = tkinter.ttk.Combobox(
+                        Frame_State_Choose_Line_1,
+                        width=12,height=1,
+                        font=('黑体', 12),
+                        values=['添加时间戳','不添加时间戳'],
+                        state='readonly'
+                    )
+        self.Combobox_Add_Timestamp.bind("<<ComboboxSelected>>", self.Combobox_Add_Timestamp_Selected)
+        self.Combobox_Add_Timestamp.pack(side=tk.LEFT,padx=2)
+        self.Combobox_Add_Timestamp.current(0)
+
+        Frame_Output_Data_Info = tk.Frame(
+                        self,
+                        #relief='groove',bd=1
+                    )
+        Frame_Output_Data_Info.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+        Label_Output_Text = tk.Label(
+                        Frame_Output_Data_Info,
+                        text='输出数据:',
+                        font=('黑体', 12),
+                        width=30,height=1,
+                        anchor='w'
+                    )
+        Label_Output_Text.pack(side=tk.LEFT)
+
+
+        Frame_Output_Text = tk.Frame(
+                        self,
+                        #relief='groove',bd=1
+                    )
+        Frame_Output_Text.pack(side=tk.TOP)
+
+        self.Text_Output_Data = tk.Text(
+                        Frame_Output_Text,
+                        width=32,height=8,
+                        font=('Arial', 12)
+                    )
+        self.Text_Output_Data.pack(side=tk.LEFT)
+        self.Text_Output_Data_Scroll = tk.Scrollbar(Frame_Output_Text)
+        self.Text_Output_Data_Scroll.pack(side=tk.RIGHT,fill=tk.Y)
+        # 关联滚动条和文本框
+        self.Text_Output_Data_Scroll.config(command=self.Text_Output_Data.yview)
+        self.Text_Output_Data.config(yscrollcommand=self.Text_Output_Data_Scroll.set)
+
+
+    def Combobox_Show_State_Selected(self, event):
+        '''选择输出文本的设置'''
+        self.show_state = self.Combobox_Show_State.current()
+
+
+    def Combobox_Add_Timestamp_Selected(self, event):
+        '''选择是否添加时间戳'''
+        self.add_timestamp = self.Combobox_Add_Timestamp.current()
+
+
+
+
+
+
+
+
 class SerialPortAssistant():
     """
 串口助手APP的主类\n
@@ -771,115 +878,19 @@ class SerialPortAssistant():
         self.serial_port_model.pack(side=tk.TOP)
 
 
-
-        
-        #root/Frame_Right
-        Frame_Data_Structure = tk.Frame(
-                        Frame_Right,
-                        #relief='groove',bd=1
-                    )
-        Frame_Data_Structure.pack(side=tk.TOP)
-        
-        self.send_data_model = SendDataModel(Frame_Data_Structure)
+        #数据发送模块
+        self.send_data_model = SendDataModel(Frame_Right)
         self.send_data_model.AddWidget()
         self.send_data_model.pack(side=tk.TOP)
         
 
-
-
-        #root/Frame_Right
-        Frame_Output_Data = tk.Frame(
-                        Frame_Right,
-                        #relief='groove',bd=1
-                    )
-        Frame_Output_Data.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Output_Data
-        Frame_State_Choose = tk.Frame(
-                        Frame_Output_Data,
-                        #relief='groove',bd=1
-                    )
-        Frame_State_Choose.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Output_Data/Frame_State_Choose
-        Label_Set_Output_Text = tk.Label(
-                        Frame_State_Choose,
-                        text='选择输出文本的设置:',
-                        font=('黑体', 12),
-                        width=30,height=1,
-                        anchor='w'
-                    )
-        Label_Set_Output_Text.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Output_Data/Frame_State_Choose
-        Frame_State_Choose_Line_1 = tk.Frame(
-                        Frame_State_Choose,
-                        #relief='groove',bd=1
-                    )
-        Frame_State_Choose_Line_1.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Output_Data/Frame_State_Choose/Frame_State_Choose_Line_1
-        self.Combobox_Show_State = tkinter.ttk.Combobox(
-                        Frame_State_Choose_Line_1,
-                        width=12,height=1,
-                        font=('黑体', 12),
-                        values=['解码后的数据','原始数据(16)','原始数据(2)'],
-                        # state='readonly'
-                        state='disabled'
-                    )
-        self.Combobox_Show_State.bind("<<ComboboxSelected>>", self.Combobox_Show_State_Selected)
-        self.Combobox_Show_State.pack(side=tk.LEFT,padx=2)
-        self.Combobox_Show_State.current(0)
-        #root/Frame_Right/Frame_Output_Data/Frame_State_Choose/Frame_State_Choose_Line_1
-        self.Combobox_Add_Timestamp = tkinter.ttk.Combobox(
-                        Frame_State_Choose_Line_1,
-                        width=12,height=1,
-                        font=('黑体', 12),
-                        values=['添加时间戳','不添加时间戳'],
-                        state='readonly'
-                    )
-        self.Combobox_Add_Timestamp.bind("<<ComboboxSelected>>", self.Combobox_Add_Timestamp_Selected)
-        self.Combobox_Add_Timestamp.pack(side=tk.LEFT,padx=2)
-        self.Combobox_Add_Timestamp.current(0)
-        #root/Frame_Right/Frame_Output_Data
-        Frame_Output_Data_Info = tk.Frame(
-                        Frame_Output_Data,
-                        #relief='groove',bd=1
-                    )
-        Frame_Output_Data_Info.pack(side=tk.TOP, fill=tk.X, expand=True)
-        #root/Frame_Right/Frame_Output_Data/Frame_Output_Data_Info
-        Label_Output_Text = tk.Label(
-                        Frame_Output_Data_Info,
-                        text='输出数据:',
-                        font=('黑体', 12),
-                        width=30,height=1,
-                        anchor='w'
-                    )
-        Label_Output_Text.pack(side=tk.LEFT)
-
-        #root/Frame_Right/Frame_Output_Data
-        Frame_Output_Text = tk.Frame(
-                        Frame_Output_Data,
-                        #relief='groove',bd=1
-                    )
-        Frame_Output_Text.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_Output_Text/Frame_Output_Text
-        self.Text_Output_Data = tk.Text(
-                        Frame_Output_Text,
-                        width=32,height=8,
-                        font=('Arial', 12)
-                    )
-        self.Text_Output_Data.pack(side=tk.LEFT)
-        # self.Text_Output_Data.insert('end','yaw=1.0\npitch=1.0\nroll=1.0')
-        self.Text_Output_Data_Scroll = tk.Scrollbar(Frame_Output_Text)
-        self.Text_Output_Data_Scroll.pack(side=tk.RIGHT,fill=tk.Y)
-        # 关联滚动条和文本框
-        self.Text_Output_Data_Scroll.config(command=self.Text_Output_Data.yview)
-        self.Text_Output_Data.config(yscrollcommand=self.Text_Output_Data_Scroll.set)
+        #数据接收模块
+        self.receive_data_model = ReceiveDataModel(Frame_Right)
+        self.receive_data_model.AddWidget()
+        self.receive_data_model.pack(side=tk.TOP)
         
-    
-    # def Combobox_SendData_Name_OnReturn(self,event):
-    #     print('event.keysym=',event.keysym)
-    # def Combobox_SendData_Name_OnBackSpace(self,event):
-    #     print('event.keysym=',event.keysym)
-    # def Combobox_SendData_Name_OnDelete(self,event):
-    #     print('event.keysym=',event.keysym)
+        
+
 
     def Combobox_SendData_Type_Selected(self,event):
         index = self.Combobox_SendData_Name.current()
