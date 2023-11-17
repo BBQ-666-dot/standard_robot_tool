@@ -87,9 +87,7 @@ class ReceivedDataList(tk.Listbox):
 
 class SerialPortModel(tk.Frame):
     '''串口模块，包含了串口参数设置的UI以及串口的打开/关闭按钮'''
-    def __init__(self, 
-                 master=None, 
-                 **kwargs) -> None:
+    def __init__(self, master=None, **kwargs) -> None:
         super().__init__(master, **kwargs)
         self.available_ports = []#可用端口列表
         self.sample_number = tk.IntVar()#采样点个数
@@ -280,6 +278,262 @@ class SerialPortModel(tk.Frame):
     def BlankFunction(self):
         '''空函数，用于占位'''
         pass
+
+
+class SendDataModel(tk.Frame):
+    '''数据发送模块，包含了数据发送的一些设置'''
+    def __init__(self, master=None, **kwargs) -> None:
+        super().__init__(master, **kwargs)
+        self.send_data_list = []#发送数据的列表
+        self.send_data_data = tk.StringVar()
+        self.send_data_data.set('0')
+
+
+    def AddWidget(self):
+        # Frame_Text_SendData_Structure = tk.Frame(
+        #                 Frame_Data_Structure,
+        #                 #relief='groove',bd=1
+        #             )
+        # Frame_Text_SendData_Structure.pack(side=tk.TOP)
+        #root/Frame_Right/Frame_SendData_Structure
+        Label_SendData_Structure = tk.Label(
+                        self,
+                        text='发送的数据:',
+                        font=('黑体', 12),
+                        width=35,height=1,
+                        anchor='w'
+                    )
+        Label_SendData_Structure.pack(side=tk.TOP, fill=tk.X, expand=True)
+        
+        Frame_SendData_Name = tk.Frame(
+                        self,
+                    )
+        Frame_SendData_Name.pack(side=tk.TOP)
+        
+        Label_SendData_Name = tk.Label(
+                        Frame_SendData_Name,
+                        text='数据名称',
+                        font=('黑体', 12),
+                        width=10,height=1,
+                        anchor='w'
+                    )
+        Label_SendData_Name.pack(side=tk.LEFT)
+        
+        self.Combobox_SendData_Name = tkinter.ttk.Combobox(
+                        Frame_SendData_Name,
+                        width=10,height=1,
+                        font=('Arial', 12),
+                        values=[],
+                        state='normal'
+                    )
+        self.Combobox_SendData_Name.pack(side=tk.RIGHT)
+        self.Combobox_SendData_Name.bind("<KeyRelease>", self.Combobox_SendData_Name_OnKeyRelease)
+        self.Combobox_SendData_Name.bind("<Control-KeyPress-Delete>", self.Combobox_SendData_Name_OnCtrlDel)
+        self.Combobox_SendData_Name.bind("<<ComboboxSelected>>", self.Combobox_SendData_Name_Selected)
+        # self.Combobox_SendData_Name.bind("<BackSpace>", self.Combobox_SendData_Name_OnBackSpace)
+        # self.Combobox_SendData_Name.bind("<Delete>", self.Combobox_SendData_Name_OnDelete)
+        # self.Combobox_SendData_Name.bind("<Return>", self.Combobox_SendData_Name_OnReturn)
+        # self.Combobox_SendData_Name.bind("<KeyPress>", self.Combobox_SendData_Name_OnKeyPress)
+        
+        Frame_SendData_Type = tk.Frame(
+                        self,
+                    )
+        Frame_SendData_Type.pack(side=tk.TOP)
+        
+        Label_SendData_Type = tk.Label(
+                        Frame_SendData_Type,
+                        text='数据类型',
+                        font=('黑体', 12),
+                        width=10,height=1,
+                        anchor='w'
+                    )
+        Label_SendData_Type.pack(side=tk.LEFT)
+        
+        self.Combobox_SendData_Type = tkinter.ttk.Combobox(
+                        Frame_SendData_Type,
+                        width=10,height=1,
+                        font=('Arial', 12),
+                        values=['INT','FLOAT'],
+                        state='disabled'#readonly
+                    )
+        self.Combobox_SendData_Type.pack(side=tk.RIGHT)
+        self.Combobox_SendData_Type.current(0)
+        self.Combobox_SendData_Type.bind("<<ComboboxSelected>>", self.Combobox_SendData_Type_Selected)
+        # self.Combobox_SendData_Type.bind("<Return>", self.Combobox_SendData_Type_OnReturn)
+        
+        Frame_SendData_Data = tk.Frame(
+                        self,
+                    )
+        Frame_SendData_Data.pack(side=tk.TOP)
+        
+        Label_SendData_Data = tk.Label(
+                        Frame_SendData_Data,
+                        text='数据内容',
+                        font=('黑体', 12),
+                        width=10,height=1,
+                        anchor='w'
+                    )
+        Label_SendData_Data.pack(side=tk.LEFT)
+        
+        self.Entry_SendData_Data = tk.Entry(
+                        Frame_SendData_Data,
+                        width=12,
+                        font=('Arial', 12),
+                        textvariable=self.send_data_data,
+                        state='disabled' #normal
+                    )
+        self.Entry_SendData_Data.pack(side=tk.RIGHT)
+        # self.Entry_SendData_Data.bind('<MouseWheel>',self.Entry_Samples_Number_OnMouseScroll)
+        self.Entry_SendData_Data.bind("<Return>", self.Entry_SendData_Data_OnReturn)
+        
+        Frame_Preview_SendData = tk.Frame(
+                        self,
+                    )
+        Frame_Preview_SendData.pack(side=tk.TOP)
+        
+        Label_Preview_SendData = tk.Label(
+                        Frame_Preview_SendData,
+                        text='预览发送数据',
+                        font=('黑体', 12),
+                        width=10,height=1,
+                        anchor='w'
+                    )
+        Label_Preview_SendData.pack(side=tk.TOP, fill=tk.X, expand=True)
+        
+        Frame_Text_Preview_SendData = tk.Frame(
+                        Frame_Preview_SendData,
+                    )
+        Frame_Text_Preview_SendData.pack(side=tk.TOP)
+        
+        self.Text_Preview_SendData = tk.Text(
+                        Frame_Text_Preview_SendData,
+                        width=32,height=6,
+                        font=('Arial', 12)
+                    )
+        self.Text_Preview_SendData.pack(side=tk.LEFT)
+        self.Text_Preview_SendData.insert('end','发送数据总量：0\n发送于[--:--:--]\n')
+        self.Text_Preview_SendData_Scroll = tk.Scrollbar(Frame_Text_Preview_SendData)
+        self.Text_Preview_SendData_Scroll.pack(side=tk.RIGHT,fill=tk.Y)
+        # 关联滚动条和文本框
+        self.Text_Preview_SendData_Scroll.config(command=self.Text_Preview_SendData.yview)
+        self.Text_Preview_SendData.config(yscrollcommand=self.Text_Preview_SendData_Scroll.set)
+
+
+    def Combobox_SendData_Name_OnCtrlDel(self,event):#用于删除发送数据
+        # print(self.Combobox_SendData_Name.current())
+        index = self.Combobox_SendData_Name.current()
+        self.send_data_list.pop(index)
+        if self.send_data_list.__len__() == 0:
+            self.Combobox_SendData_Name.configure(values=[])
+            self.Combobox_SendData_Name.set('')
+            self.Combobox_SendData_Type.configure(state='disabled')
+            self.Entry_SendData_Data.configure(state='disabled')
+        else:#如果数据列表不为空则跳转到第一个发送数据
+            self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
+            self.Combobox_SendData_Name.current(0)
+            self.Combobox_SendData_Type.current(self.send_data_list[0][1])
+            self.send_data_data.set(str(self.send_data_list[0][2]))
+        self.UpdatePreviewSendData(updata_state=DELETE_SENDDATA, delete_index=index)
+        print(self.Combobox_SendData_Name.current())
+        print(self.send_data_list)
+    
+        
+    def Combobox_SendData_Name_OnKeyRelease(self,event):#用于输入内容及检测是否添加数据
+        if event.keysym == "Return":
+            # print('press Return')
+            if self.Combobox_SendData_Name.get() == '':
+                tkinter.messagebox.showwarning(title='提示', message='数据名称不能为空！')
+            else:
+                if self.Combobox_SendData_Name.current() == -1:#发送数据名称不存在则添加新的发送数据
+                    self.Combobox_SendData_Type.configure(state='normal')
+                    self.Entry_SendData_Data.configure(state='normal')
+                    self.Combobox_SendData_Type.current(0)
+                    self.send_data_data.set('0')
+                    
+                    data_name = self.Combobox_SendData_Name.get()
+                    data_type = spl.txt_to_type.get(self.Combobox_SendData_Type.get().lower())
+                    data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
+                    if data_type == spl.UINT32_T:
+                        data = int(data)
+                        
+                    self.send_data_list.append([data_name, data_type, data])
+                    
+                    self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
+                    self.UpdatePreviewSendData(updata_state=ADD_SENDDATA)
+                else:#如果数据名称存在则跳转到对应的发送数据
+                    name_index = self.Combobox_SendData_Name.current()
+                    self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
+                    self.send_data_data.set(str(self.send_data_list[name_index][2]))
+                    
+            print(self.Combobox_SendData_Name.current())
+            print(self.send_data_list)
+        else:
+        # elif '0' < event.keysym < '9' or 'A' < event.keysym < 'z' or event.keysym == "BackSpace" or event.keysym == "Delete":
+            if self.Combobox_SendData_Name.current() != -1:#如果数据名称存在则跳转到对应的发送数据
+                name_index = self.Combobox_SendData_Name.current()
+                self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
+                self.send_data_data.set(str(self.send_data_list[name_index][2]))
+
+    
+    def Combobox_SendData_Name_Selected(self,event):
+        name_index = self.Combobox_SendData_Name.current()
+        self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
+        self.send_data_data.set(str(self.send_data_list[name_index][2]))
+
+
+    def Combobox_SendData_Type_Selected(self,event):
+        index = self.Combobox_SendData_Name.current()
+        data_type = spl.txt_to_type.get(self.Combobox_SendData_Type.get().lower())
+        # if type(self.send_data_list[index][2]) != self.send_data_list[index][1]:
+        data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
+        if data_type == spl.UINT32_T:
+            data = int(data)
+        self.send_data_list[index][1] = data_type
+        self.send_data_list[index][2] = data
+        self.send_data_data.set(str(self.send_data_list[index][2]))
+        self.UpdatePreviewSendData(updata_state=MODIFY_SENDDATA,delete_index=index)
+        print(self.Combobox_SendData_Name.current())
+        print(self.send_data_list)
+
+
+
+    def Entry_SendData_Data_OnReturn(self,event):
+        index = self.Combobox_SendData_Name.current()
+        data_type = self.send_data_list[index][1]
+        data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
+        if data_type == spl.UINT32_T:
+            data = int(data)
+        self.send_data_list[index][2] = data
+        self.UpdatePreviewSendData(updata_state=MODIFY_SENDDATA,delete_index=index)
+        print(self.Combobox_SendData_Name.current())
+        print(self.send_data_list)
+
+
+
+    def UpdatePreviewSendData(self, updata_state, delete_index=0):
+        '''
+        ### 更新预览发送数据\n
+        预览的发送数据格式如下：\n
+        'name[type] = data'
+        '''
+        row_offset = 2
+        self.Text_Preview_SendData.delete("1.7", "2.0-1c")
+        self.Text_Preview_SendData.insert("1.7",str(self.send_data_list.__len__()))
+        if updata_state == ADD_SENDDATA:
+            data_name = self.send_data_list[-1][0]
+            data_type = self.send_data_list[-1][1]
+            data = self.send_data_list[-1][2]
+            self.Text_Preview_SendData.insert(tk.END,f"{data_name}[{spl.type_to_txt[data_type]}] = {data}\n")
+        elif updata_state == DELETE_SENDDATA:
+            self.Text_Preview_SendData.delete(f"{delete_index + row_offset + 1}.0", f"{delete_index + row_offset + 2}.0")
+        elif updata_state == MODIFY_SENDDATA:
+            data_name = self.send_data_list[delete_index][0]
+            data_type = self.send_data_list[delete_index][1]
+            data = self.send_data_list[delete_index][2]
+            self.Text_Preview_SendData.delete(f"{delete_index + row_offset + 1}.0", f"{delete_index + row_offset + 2}.0")
+            self.Text_Preview_SendData.insert(f"{delete_index + row_offset + 1}.0",f"{data_name}[{spl.type_to_txt[data_type]}] = {data}\n")
+
+
 
 class SerialPortAssistant():
     """
@@ -526,144 +780,13 @@ class SerialPortAssistant():
                     )
         Frame_Data_Structure.pack(side=tk.TOP)
         
+        self.send_data_model = SendDataModel(Frame_Data_Structure)
+        self.send_data_model.AddWidget()
+        self.send_data_model.pack(side=tk.TOP)
         
-        #root/Frame_Right/Frame_Data_Structure
-        Frame_Text_SendData_Structure = tk.Frame(
-                        Frame_Data_Structure,
-                        #relief='groove',bd=1
-                    )
-        Frame_Text_SendData_Structure.pack(side=tk.TOP)
-        #root/Frame_Right/Frame_SendData_Structure
-        Label_SendData_Structure = tk.Label(
-                        Frame_Text_SendData_Structure,
-                        text='发送的数据:',
-                        font=('黑体', 12),
-                        width=35,height=1,
-                        anchor='w'
-                    )
-        Label_SendData_Structure.pack(side=tk.TOP, fill=tk.X, expand=True)
-        
-        # Frame_SendData_Number = tk.Frame(
-        #                 Frame_Text_SendData_Structure,
-        #             )
-        # Frame_SendData_Number.pack(side=tk.TOP)
-        
-        Frame_SendData_Name = tk.Frame(
-                        Frame_Text_SendData_Structure,
-                    )
-        Frame_SendData_Name.pack(side=tk.TOP)
-        
-        Label_SendData_Name = tk.Label(
-                        Frame_SendData_Name,
-                        text='数据名称',
-                        font=('黑体', 12),
-                        width=10,height=1,
-                        anchor='w'
-                    )
-        Label_SendData_Name.pack(side=tk.LEFT)
-        
-        self.Combobox_SendData_Name = tkinter.ttk.Combobox(
-                        Frame_SendData_Name,
-                        width=10,height=1,
-                        font=('Arial', 12),
-                        values=[],
-                        state='normal'
-                    )
-        self.Combobox_SendData_Name.pack(side=tk.RIGHT)
-        self.Combobox_SendData_Name.bind("<KeyRelease>", self.Combobox_SendData_Name_OnKeyRelease)
-        self.Combobox_SendData_Name.bind("<Control-KeyPress-Delete>", self.Combobox_SendData_Name_OnCtrlDel)
-        self.Combobox_SendData_Name.bind("<<ComboboxSelected>>", self.Combobox_SendData_Name_Selected)
-        # self.Combobox_SendData_Name.bind("<BackSpace>", self.Combobox_SendData_Name_OnBackSpace)
-        # self.Combobox_SendData_Name.bind("<Delete>", self.Combobox_SendData_Name_OnDelete)
-        # self.Combobox_SendData_Name.bind("<Return>", self.Combobox_SendData_Name_OnReturn)
-        # self.Combobox_SendData_Name.bind("<KeyPress>", self.Combobox_SendData_Name_OnKeyPress)
-        
-        Frame_SendData_Type = tk.Frame(
-                        Frame_Text_SendData_Structure,
-                    )
-        Frame_SendData_Type.pack(side=tk.TOP)
-        
-        Label_SendData_Type = tk.Label(
-                        Frame_SendData_Type,
-                        text='数据类型',
-                        font=('黑体', 12),
-                        width=10,height=1,
-                        anchor='w'
-                    )
-        Label_SendData_Type.pack(side=tk.LEFT)
-        
-        self.Combobox_SendData_Type = tkinter.ttk.Combobox(
-                        Frame_SendData_Type,
-                        width=10,height=1,
-                        font=('Arial', 12),
-                        values=['INT','FLOAT'],
-                        state='disabled'#readonly
-                    )
-        self.Combobox_SendData_Type.pack(side=tk.RIGHT)
-        self.Combobox_SendData_Type.current(0)
-        self.Combobox_SendData_Type.bind("<<ComboboxSelected>>", self.Combobox_SendData_Type_Selected)
-        # self.Combobox_SendData_Type.bind("<Return>", self.Combobox_SendData_Type_OnReturn)
-        
-        Frame_SendData_Data = tk.Frame(
-                        Frame_Text_SendData_Structure,
-                    )
-        Frame_SendData_Data.pack(side=tk.TOP)
-        
-        Label_SendData_Data = tk.Label(
-                        Frame_SendData_Data,
-                        text='数据内容',
-                        font=('黑体', 12),
-                        width=10,height=1,
-                        anchor='w'
-                    )
-        Label_SendData_Data.pack(side=tk.LEFT)
-        
-        self.Entry_SendData_Data = tk.Entry(
-                        Frame_SendData_Data,
-                        width=12,
-                        font=('Arial', 12),
-                        textvariable=self.send_data_data,
-                        state='disabled' #normal
-                    )
-        self.Entry_SendData_Data.pack(side=tk.RIGHT)
-        # self.Entry_SendData_Data.bind('<MouseWheel>',self.Entry_Samples_Number_OnMouseScroll)
-        self.Entry_SendData_Data.bind("<Return>", self.Entry_SendData_Data_OnReturn)
-        
-        Frame_Preview_SendData = tk.Frame(
-                        Frame_Text_SendData_Structure,
-                    )
-        Frame_Preview_SendData.pack(side=tk.TOP)
-        
-        Label_Preview_SendData = tk.Label(
-                        Frame_Preview_SendData,
-                        text='预览发送数据',
-                        font=('黑体', 12),
-                        width=10,height=1,
-                        anchor='w'
-                    )
-        Label_Preview_SendData.pack(side=tk.TOP, fill=tk.X, expand=True)
-        
-        Frame_Text_Preview_SendData = tk.Frame(
-                        Frame_Preview_SendData,
-                    )
-        Frame_Text_Preview_SendData.pack(side=tk.TOP)
-        
-        self.Text_Preview_SendData = tk.Text(
-                        Frame_Text_Preview_SendData,
-                        width=32,height=6,
-                        font=('Arial', 12)
-                    )
-        self.Text_Preview_SendData.pack(side=tk.LEFT)
-        self.Text_Preview_SendData.insert('end','发送数据总量：0\n发送于[--:--:--]\n')
-        self.Text_Preview_SendData_Scroll = tk.Scrollbar(Frame_Text_Preview_SendData)
-        self.Text_Preview_SendData_Scroll.pack(side=tk.RIGHT,fill=tk.Y)
-        # 关联滚动条和文本框
-        self.Text_Preview_SendData_Scroll.config(command=self.Text_Preview_SendData.yview)
-        self.Text_Preview_SendData.config(yscrollcommand=self.Text_Preview_SendData_Scroll.set)
-        
-        
-        
-        
+
+
+
         #root/Frame_Right
         Frame_Output_Data = tk.Frame(
                         Frame_Right,
