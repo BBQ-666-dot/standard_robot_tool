@@ -1,18 +1,20 @@
 /**
-  ****************************(C) COPYRIGHT 2019 DJI****************************
+  ****************************(C) COPYRIGHT 2023 Polarbear*************************
   * @file       usb_task.c/h
-  * @brief      usb outputs the error message.usb���������Ϣ
+  * @brief      usb outputs the IMU and gimbal data to the miniPC
   * @note       
   * @history
   *  Version    Date            Author          Modification
-  *  V1.0.0     Nov-11-2019     RM              1. done
+  *  V1.0.0     2023-7-11       Penguin         1. done
+  *  V1.0.1     Oct-31-2023     LihanChen       1. Finish building the core framework to make it compatible with both debugging mode and MiniPC mode.
+  *  V1.0.2     Nov-1-2023      LihanChen       1. Merge Append_CRC16_Check_Sum_SendData() and Append_CRC16_Check_Sum_OutputData() into Append_CRC16_Check_Sum()
   *
   @verbatim
-  ==============================================================================
+  =================================================================================
 
-  ==============================================================================
+  =================================================================================
   @endverbatim
-  ****************************(C) COPYRIGHT 2019 DJI****************************
+  ****************************(C) COPYRIGHT 2023 Polarbear*************************
   */
 #include "usb_task.h"
 
@@ -30,33 +32,28 @@
 #include "gimbal_task.h"
 #include "chassis_task.h"
 #include "INS_task.h"
-
 #include "referee.h"
-
-
 #include <math.h>
-//Function Declaration
-void char_to_uint(uint8_t * word, const char * str);
-static void usb_printf(const char *fmt,...);
+
+// Function Declarations
+void char_to_uint(uint8_t *word, const char *str);
+static void usb_printf(const char *fmt, ...);
 static void usb_send_AutoAim(void);
 static void usb_send_outputPC(void);
-static void usb_recieve(void);
-float get_distance_xy(float x,float y);
+static void usb_receive(void);
 
-uint32_t Verify_CRC16_Check_Sum(const uint8_t * pchMessage, uint32_t dwLength);
-void Append_CRC16_Check_Sum_SendData(SendData_s * pchMessage, uint32_t dwLength);
-void Append_CRC16_Check_Sum_OutputData(OutputData_s * pchMessage, uint32_t dwLength);
+uint16_t Get_CRC16_Check_Sum(const uint8_t * pchMessage, uint32_t dwLength, uint16_t wCRC);
+uint32_t Verify_CRC16_Check_Sum(const uint8_t *pchMessage, uint32_t dwLength);
+void Append_CRC16_Check_Sum(void* pchMessage, uint32_t dwLength, int dataType);
 
-
-//Constants Declaration
+// Constants Declaration
 const error_t *error_list_usb_local;
-static const fp32* gimbal_INT_gyro_angle_point;
-#define AUTO_AIM_STATE 0
-#define OUTPUT_PC_STATE 1
+static const fp32 *gimbal_INT_gyro_angle_point;
 
-
-//External variable calls
+// External Variable Declarations
+extern gimbal_control_t gimbal_control;
 extern ext_game_robot_state_t robot_state;
+extern chassis_move_t chassis_move;
 extern ext_power_heat_data_t power_heat_data_t;
 extern ext_game_robot_HP_t game_robot_HP_t;
 extern uint8_t UserTxBufferFS;
@@ -64,7 +61,7 @@ extern uint8_t UserRxBufferFS;
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern CRC_HandleTypeDef hcrc;
 
-//Variable Declaration
+// Variable Declarations
 static uint8_t USB_STATE = AUTO_AIM_STATE;
 ReceivedData_s ReceivedData;
 ReceivedData_s AimingParameter;
@@ -79,117 +76,149 @@ static uint8_t usb_rx_buf[APP_RX_DATA_SIZE];
 uint32_t UserTxLengthFS = 0;
 #define CRC16_INIT 0xFFFF
 
-
-void usb_task(void const * argument)
+void usb_task(void const *argument)
 {
-    //基础参数
     MX_USB_DEVICE_Init();
-    
+
     buzzer_off();
-    while(1)
+    while (1)
     {
-      //Receive Data
-      usb_recieve();
+        usb_receive();
 
-      if (InputData.header == 0xA6){
-        USB_STATE = OUTPUT_PC_STATE;
-      }else{
-        USB_STATE = AUTO_AIM_STATE;
-      }
+        if (InputData.header == 0xA6)
+            /* Used for adapting LJW's serial debugging software: https://gitee.com/SMBU-POLARBEAR/Serial_Port_Assistant */ 
+            USB_STATE = OUTPUT_PC_STATE;
+        else
+            /* Used for sending data to the minipc */
+            USB_STATE = AUTO_AIM_STATE;
 
-      if (USB_STATE == AUTO_AIM_STATE)
-      {
-        SendData.header = 0x5A;
-        buzzer_on(1000, 30000);
-
-        
-        uint8_t crc_ok = Verify_CRC16_Check_Sum((const uint8_t *)(&ReceivedData), sizeof(ReceivedData));
-        if (crc_ok)
-        { /*接收到正确数据这一部分的运行逻辑可能还要重新构建一下*/
-          AimingParameter = ReceivedData;
-        }
-
-        /*以下数据为发送数据的测试用数据，正式使用时请删除或注释掉*/
-        // gimbal_INT_gyro_angle_point = get_INS_angle_point();//获取欧拉角, 0:yaw, 1:pitch, 2:roll 单位 rad
-        // SendData.detect_color = 0;
-        // SendData.reset_tracker = 0;
-        // SendData.reserved = 1;
-        // SendData.roll = gimbal_INT_gyro_angle_point[2];//云台roll
-        // SendData.pitch = gimbal_INT_gyro_angle_point[1];//云台pitch
-        // SendData.yaw = gimbal_INT_gyro_angle_point[0];//云台yaw
-
-        usb_send_AutoAim();//发送数据
-
-      }else if (USB_STATE == OUTPUT_PC_STATE){
-
-        uint8_t crc_ok = Verify_CRC16_Check_Sum((const uint8_t *)(&InputData), sizeof(InputData));
-
-        if (crc_ok)
+        if (USB_STATE == AUTO_AIM_STATE)
         {
-          gimbal_INT_gyro_angle_point = get_INS_angle_point();//获取欧拉角, 0:yaw, 1:pitch, 2:roll 单位 rad
-          buzzer_on(500, 30000);
-          
-          OutputData.header = 0x6A;
-          OutputData.length = sizeof(OutputData_s);
-          char_to_uint(OutputData.name_1,"M1_temp"); 
-          OutputData.type_1 = 1;
-          char_to_uint(OutputData.name_2,"M2_temp"); 
-          OutputData.type_2 = 1;
-          char_to_uint(OutputData.name_3,"M3_temp"); 
-          OutputData.type_3 = 1;
-          char_to_uint(OutputData.name_4,"M4_temp");
-          OutputData.type_4 = 1; 
+            SendData.header = 0x5A;
+            buzzer_on(1000, 30000);
 
-          char_to_uint(OutputData.name_5,"t_length"); 
-          OutputData.type_5 = 1;
-          char_to_uint(OutputData.name_6,"t_angle"); 
-          OutputData.type_6 = 1;
+            uint8_t crc_ok = Verify_CRC16_Check_Sum((const uint8_t *)(&ReceivedData), sizeof(ReceivedData));
+            if (crc_ok)
+            {
+                /* Handle the data when CRC is correct */
+                AimingParameter = ReceivedData;
 
+                gimbal_INT_gyro_angle_point = get_INS_angle_point();  // Get Euler angles: 0:yaw, 1:pitch, 2:roll in radians 
 
-          usb_send_outputPC();
+                SendData.detect_color = 0;  // TODO: Assigned by UART 
+                SendData.reset_tracker = 0; // TODO: Assigned by Auto_Aim 
+                SendData.reserved = 1;
+                SendData.roll = gimbal_INT_gyro_angle_point[2]; 
+                SendData.pitch = gimbal_INT_gyro_angle_point[1]; 
+                SendData.yaw = gimbal_INT_gyro_angle_point[0]; 
+                // SendData.aim_x assigned by gimbal_autoaim_control() 
+                // SendData.aim_y assigned by gimbal_autoaim_control() 
+                // SendData.aim_z assigned by gimbal_autoaim_control() 
+            }
 
-        }else{
-          buzzer_off();
+            usb_send_AutoAim(); // Send data
         }
-      }
+        else if (USB_STATE == OUTPUT_PC_STATE)
+        {
+            uint8_t crc_ok = Verify_CRC16_Check_Sum((const uint8_t *)(&InputData), sizeof(InputData));
 
+            if (crc_ok)
+            {
+                gimbal_INT_gyro_angle_point = get_INS_angle_point(); // Get Euler angles: 0:yaw, 1:pitch, 2:roll in radians
+                buzzer_on(500, 30000);
+
+                OutputData.header = 0x6A;
+                OutputData.length = sizeof(OutputData_s);
+
+                char_to_uint(OutputData.name_1, "det_col");
+                OutputData.type_1 = 0;
+                OutputData.data_1 = (uint32_t)SendData.detect_color;
+
+                char_to_uint(OutputData.name_2, "rset_tra");
+                OutputData.type_2 = 0;
+                OutputData.data_2 = (uint32_t)SendData.reset_tracker;
+
+                char_to_uint(OutputData.name_3, "reserved");
+                OutputData.type_3 = 0;
+                OutputData.data_3 = (uint32_t)SendData.reserved;
+
+                char_to_uint(OutputData.name_5, "roll");
+                OutputData.type_5 = 1;
+                OutputData.data_5 = gimbal_INT_gyro_angle_point[2];
+
+                char_to_uint(OutputData.name_6, "pitch");
+                OutputData.type_6 = 1;
+                OutputData.data_6 = gimbal_INT_gyro_angle_point[1];
+
+                char_to_uint(OutputData.name_7, "yaw");
+                OutputData.type_7 = 1;
+                OutputData.data_7 = gimbal_INT_gyro_angle_point[0];
+
+                char_to_uint(OutputData.name_8, "aim_x");
+                OutputData.type_8 = 1;
+                OutputData.data_8 = SendData.aim_x;
+
+                char_to_uint(OutputData.name_9, "aim_y");
+                OutputData.type_9 = 1;
+                OutputData.data_9 = SendData.aim_y;
+
+                char_to_uint(OutputData.name_10, "aim_z");
+                OutputData.type_10 = 1;
+                OutputData.data_10 = SendData.aim_z;
+
+                usb_send_outputPC();
+            }
+            else
+            {
+                buzzer_off();
+            }
+        }
     }
 }
 
-void char_to_uint(uint8_t * word, const char * str){
+void char_to_uint(uint8_t *word, const char *str)
+{
     int i = 0;
-    while(str[i] != '\0' && i < 10){
+    while (str[i] != '\0' && i < 10)
+    {
         word[i] = str[i];
         i++;
     }
 }
 
-static void usb_send_AutoAim(void){
-    Append_CRC16_Check_Sum_SendData(&SendData,sizeof(SendData_s));
+static void usb_send_AutoAim(void)
+{
+    Append_CRC16_Check_Sum(&SendData, sizeof(SendData_s), 0);
     memcpy(usb_tx_buf, &SendData, sizeof(SendData_s));
     CDC_Transmit_FS(usb_tx_buf, sizeof(SendData_s));
 }
 
-static void usb_send_outputPC(void){
-    Append_CRC16_Check_Sum_OutputData(&OutputData,sizeof(OutputData_s));
+static void usb_send_outputPC(void)
+{
+    Append_CRC16_Check_Sum(&OutputData, sizeof(OutputData_s), 1);
     memcpy(usb_tx_buf, &OutputData, sizeof(OutputData_s));
     CDC_Transmit_FS(usb_tx_buf, sizeof(OutputData_s));
 }
 
-static void usb_recieve(void){
-    uint32_t len = 384;//48*8 bit
-    CDC_Receive_FS(usb_rx_buf, &len);//将数据读入缓存区
-    if (usb_rx_buf[0] == 0xA5){
-      memcpy(&ReceivedData, usb_rx_buf, sizeof(ReceivedData_s));
-    }else if (usb_rx_buf[0] == 0xA6){
-      memcpy(&InputData, usb_rx_buf, sizeof(InputData_s));
-    }else{
-      memcpy(&ReceivedData, usb_rx_buf, sizeof(ReceivedData_s));
+static void usb_receive(void)
+{
+    uint32_t len = USB_RECEIVE_LEN;
+    CDC_Receive_FS(usb_rx_buf, &len); // Read data into the buffer
+    if (usb_rx_buf[0] == 0xA5)
+    {
+        memcpy(&ReceivedData, usb_rx_buf, sizeof(ReceivedData_s));
+    }
+    else if (usb_rx_buf[0] == 0xA6)
+    {
+        memcpy(&InputData, usb_rx_buf, sizeof(InputData_s));
+    }
+    else
+    {
+        memcpy(&ReceivedData, usb_rx_buf, sizeof(ReceivedData_s));
     }
 }
 
-
-static void usb_printf(const char *fmt,...)
+static void usb_printf(const char *fmt, ...)
 {
     static va_list ap;
     uint16_t len = 0;
@@ -199,8 +228,7 @@ static void usb_printf(const char *fmt,...)
     CDC_Transmit_FS(usb_tx_buf, len);
 }
 
-
-//CRC校验用的表
+// CRC Table
 const uint16_t W_CRC_TABLE[256] = {
   0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf, 0x8c48, 0x9dc1, 0xaf5a, 0xbed3,
   0xca6c, 0xdbe5, 0xe97e, 0xf8f7, 0x1081, 0x0108, 0x3393, 0x221a, 0x56a5, 0x472c, 0x75b7, 0x643e,
@@ -225,7 +253,14 @@ const uint16_t W_CRC_TABLE[256] = {
   0xf78f, 0xe606, 0xd49d, 0xc514, 0xb1ab, 0xa022, 0x92b9, 0x8330, 0x7bc7, 0x6a4e, 0x58d5, 0x495c,
   0x3de3, 0x2c6a, 0x1ef1, 0x0f78};
 
-uint16_t Get_CRC16_Check_Sum( const uint8_t * pchMessage, uint32_t dwLength, uint16_t wCRC)
+/**
+  * @brief CRC16 Caculation function
+  * @param[in] pchMessage : Data to Verify,
+  * @param[in] dwLength : Stream length = Data + checksum
+  * @param[in] wCRC : CRC16 init value(default : 0xFFFF)
+  * @return : CRC16 checksum
+  */
+uint16_t Get_CRC16_Check_Sum(const uint8_t * pchMessage, uint32_t dwLength, uint16_t wCRC)
 {
   uint8_t ch_data;
   if (pchMessage == NULL) return 0xFFFF;
@@ -254,29 +289,27 @@ uint32_t Verify_CRC16_Check_Sum(const uint8_t * pchMessage, uint32_t dwLength)
 }
 
 /**
-  * @brief CRC16 Append function
-  * @param[in] pchMessage : Append CRC Date ,
-  * @param[in] dwLength : Stream length = Data + checksum
+  * @brief CRC16 Append function for different data structures
+  * @param[in] pchMessage : Data to append CRC
+  * @param[in] dwLength : Stream length = Data length + checksum
+  * @param[in] dataType : Type of data (0 for SendData_s, 1 for OutputData_s)
   * @return : True or False (CRC Verify Result)
   */
-void Append_CRC16_Check_Sum_SendData(SendData_s * pchMessage, uint32_t dwLength)
+void Append_CRC16_Check_Sum(void* pchMessage, uint32_t dwLength, int dataType)
 {
-  uint16_t w_crc = 0;
-  if ((pchMessage == NULL) || (dwLength <= 2)) return;
-  w_crc = Get_CRC16_Check_Sum((uint8_t *)(pchMessage), dwLength - 2, CRC16_INIT);
-  pchMessage->checksum = w_crc;
-}
+    uint16_t w_crc = 0;
+    
+    if (pchMessage == NULL || dwLength <= 2) {
+        return;
+    }
 
-/**
-  * @brief CRC16 Append function
-  * @param[in] pchMessage : Append CRC Date ,
-  * @param[in] dwLength : Stream length = Data + checksum
-  * @return : True or False (CRC Verify Result)
-  */
-void Append_CRC16_Check_Sum_OutputData(OutputData_s * pchMessage, uint32_t dwLength)
-{
-  uint16_t w_crc = 0;
-  if ((pchMessage == NULL) || (dwLength <= 2)) return;
-  w_crc = Get_CRC16_Check_Sum((uint8_t *)(pchMessage), dwLength - 2, CRC16_INIT);
-  pchMessage->checksum = w_crc;
+    if (dataType == 0) {
+        SendData_s* send_data = (SendData_s*)pchMessage;
+        w_crc = Get_CRC16_Check_Sum((uint8_t*)(send_data), dwLength - 2, CRC16_INIT);
+        send_data->checksum = w_crc;
+    } else if (dataType == 1) {
+        OutputData_s* output_data = (OutputData_s*)pchMessage;
+        w_crc = Get_CRC16_Check_Sum((uint8_t*)(output_data), dwLength - 2, CRC16_INIT);
+        output_data->checksum = w_crc;
+    }
 }
