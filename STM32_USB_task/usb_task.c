@@ -86,7 +86,7 @@ void usb_task(void const *argument)
         usb_receive();
 
         if (InputData.header == 0xA6)
-            /* Used for adapting LJW's serial debugging software: https://gitee.com/SMBU-POLARBEAR/Serial_Port_Assistant */ 
+            /* Used for adapting Penguin's serial debugging software: https://gitee.com/SMBU-POLARBEAR/Serial_Port_Assistant */ 
             USB_STATE = OUTPUT_PC_STATE;
         else
             /* Used for sending data to the minipc */
