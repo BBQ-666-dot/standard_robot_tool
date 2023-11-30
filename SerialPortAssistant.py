@@ -45,6 +45,8 @@ def BlankFunction():
     print('BlankFunction')
 
 data_storage = []
+port_is_open = False
+is_receive_data = False
 
 class WaveFormCanavas(FigureCanvasTkAgg):
     '''波形图画布'''
@@ -106,14 +108,9 @@ class SerialPortModel(tk.Frame):
         self.serial_data_read_module = spl.Serial_Data_Read()#串口数据读取模块
         self.received_header = tk.StringVar()
         self.received_header.set('6A')
-        # data_storage = []
         self.start_time = None
-        
-        self.port_is_open = False
-        self.is_receive_data = False
-        
-        
-    
+
+
     def AddWidget(self) -> None:
         '''添加组件'''
         Label_Set_Port = tk.Label(
@@ -240,6 +237,7 @@ class SerialPortModel(tk.Frame):
 
     def On_Off_Port_Click(self) -> None:
         '''打开/关闭串口'''
+        global data_storage,port_is_open,is_receive_data
         if self.Button_On_Off_Port['text'] == '打开端口':
             #传入参数
             data_storage.clear()
@@ -255,7 +253,7 @@ class SerialPortModel(tk.Frame):
             serial_port_is_open = self.serial_data_read_module.OpenSerialPort()
             if serial_port_is_open: #串口打开成功
                 log.LogInfo(log.Info_Index.PortIsOpen)
-                self.port_is_open = True #设置当前状态为串口打开
+                port_is_open = True #设置当前状态为串口打开
                 self.Button_On_Off_Port['text'] = '关闭端口' #更改开关状态
                 self.Label_On_Off_Port['bg'] = 'green'
 
@@ -264,7 +262,7 @@ class SerialPortModel(tk.Frame):
                 self.Combobox_Baud_Rate.configure(state='disabled') #串口打开状态下不能更改波特率
 
                 #开始接收数据
-                self.is_receive_data = True #设置当前状态为接收数据
+                is_receive_data = True #设置当前状态为接收数据
                 self.Receive_Data() #开始接收数据
                 log.LogInfo(log.Info_Index.PortIsReceivingData)
                 # self.UpdateDataLabels()#更新接收数据的标签
@@ -277,8 +275,8 @@ class SerialPortModel(tk.Frame):
             serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
             if serial_port_is_not_open:
                 log.LogInfo(log.Info_Index.PortIsClose)
-                self.port_is_open = False
-                self.is_receive_data = False
+                port_is_open = False
+                is_receive_data = False
                 self.Button_On_Off_Port['text'] = '打开端口'
                 self.Label_On_Off_Port['bg'] = 'red'
                 #设置状态
@@ -297,6 +295,7 @@ class SerialPortModel(tk.Frame):
 
     def MaintainDataStorageLength(self) -> bool:
         '''维持数据储存区长度，并返回是否达到最长长度'''
+        global data_storage
         res = False
         while len(data_storage) > Const.MAX_DATA_STORAGE_LENGTH:
             data_storage.pop(0)
@@ -307,7 +306,8 @@ class SerialPortModel(tk.Frame):
 
     def Receive_Data(self) -> int:
         '''接收数据'''
-        if self.is_receive_data == False:#如果不接收数据，停止执行
+        global data_storage,is_receive_data
+        if is_receive_data == False:#如果不接收数据，停止执行
             log.LogInfo(log.Info_Index.PortIsNotReceivingData)
             self.start_time = None
             return
@@ -751,7 +751,7 @@ class SerialPortAssistant():
         self.available_ports = serial.tools.list_ports.comports()
         self.show_state = DECODED_DATA
         self.add_timestamp = ADD_TIMESTAMP
-        self.is_receive_data = False
+        is_receive_data = False
         data_storage = []
         self.show_image = SHOW_IMAGE
         self.start_time = None
@@ -768,7 +768,7 @@ class SerialPortAssistant():
         self.sample_number = tk.IntVar()
         self.sample_number.set(MAX_DATA_STORAGE_LENGTH)
         self.sample_number.trace('w', self.MonitoringSampleNumberVariableChanges)
-        self.port_is_open = False
+        port_is_open = False
         
         self.figure_state = 2#绘多少维的图
         self.fig_3d = plt.figure()
@@ -1111,7 +1111,7 @@ class SerialPortAssistant():
     
     def UpdateGraph(self):
         '''更新图像'''
-        if self.is_receive_data == False: #如果不接收数据，停止执行
+        if is_receive_data == False: #如果不接收数据，停止执行
             return
         
         # x = np.linspace(0, 2 * np.pi, 100)
@@ -1136,7 +1136,7 @@ class SerialPortAssistant():
         
     # def Receive_Data(self):
     #     '''接收数据'''
-    #     if self.is_receive_data == False:#如果不接收数据，停止执行
+    #     if is_receive_data == False:#如果不接收数据，停止执行
     #         return
     #     if self.start_time == None:
     #         self.start_time = dt.datetime.now()
@@ -1224,7 +1224,7 @@ class SerialPortAssistant():
     #         #打开串口
     #         serial_port_is_open = self.serial_data_read_module.OpenSerialPort()
     #         if serial_port_is_open:
-    #             self.port_is_open = True
+    #             port_is_open = True
     #             self.Button_On_Off_Port['text'] = '关闭端口'
     #             self.Label_On_Off_Port['bg'] = 'green'
                 
@@ -1234,7 +1234,7 @@ class SerialPortAssistant():
     #             self.Text_Preview_SendData.configure(state='disabled')
                 
     #             #开始接收数据
-    #             self.is_receive_data = True
+    #             is_receive_data = True
     #             self.Receive_Data()
     #             self.UpdateDataLabels()#更新接收数据的标签
     #             self.UpdateGraph()
@@ -1245,8 +1245,8 @@ class SerialPortAssistant():
     #     else:
     #         serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
     #         if serial_port_is_not_open:
-    #             self.port_is_open = False
-    #             self.is_receive_data = False
+    #             port_is_open = False
+    #             is_receive_data = False
     #             self.Button_On_Off_Port['text'] = '打开端口'
     #             self.Label_On_Off_Port['bg'] = 'red'
     #             #设置状态
@@ -1292,7 +1292,7 @@ class SerialPortAssistant():
         '''弹出一个弹窗，询问是否退出，如果是则退出，否则不退出'''
         quit_app = tkinter.messagebox.askyesno(title='提示', message='是否退出？')
         if quit_app:#退出程序
-            if self.port_is_open:
+            if port_is_open:
                 self.serial_data_read_module.CloseSerialPort()
             sys.exit(0)
         
