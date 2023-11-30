@@ -12,6 +12,7 @@ import sys
 
 import SerialPortAssistant_lib as spl
 import Help_Windows as hw
+import SPALog as log
 
 #用于判断是添加了数据还是删除了数据
 ADD_SENDDATA = 0
@@ -86,7 +87,11 @@ class ReceivedDataList(tk.Listbox):
 
 
 class SerialPortModel(tk.Frame):
-    '''串口模块，包含了串口参数设置的UI以及串口的打开/关闭按钮'''
+    '''串口模块，主要内容如下：\n
+        &emsp;&emsp;1.串口参数设置的UI\n
+        \t2.串口的打开/关闭按钮\n
+        \t3.串口数据的读取\n
+    '''
     def __init__(self, master=None, **kwargs) -> None:
         super().__init__(master, **kwargs)
         self.available_ports = []#可用端口列表
@@ -211,12 +216,12 @@ class SerialPortModel(tk.Frame):
         self.Button_On_Off_Port.pack(side=tk.RIGHT)
 
 
-    def Entry_Samples_Number_OnMouseScroll(self,event):
+    def Entry_Samples_Number_OnMouseScroll(self,event) -> None:
         '''鼠标滚轮滚动时增减采样点个数'''
         self.sample_number.set(self.sample_number.get()+event.delta//120*MIN_SAMPLES_NUMBER_DELTA)
 
 
-    def UpdateSerialPortList(self):
+    def UpdateSerialPortList(self) -> None:
         '''更新串口列表'''
         # 获取可用的串口端口信息
         self.available_ports = serial.tools.list_ports.comports()
@@ -226,37 +231,45 @@ class SerialPortModel(tk.Frame):
             self.Combobox_Port.current(0)
 
 
-    def On_Off_Port_Click(self):
+    def On_Off_Port_Click(self) -> None:
         '''打开/关闭串口'''
         if self.Button_On_Off_Port['text'] == '打开端口':
             #传入参数
             self.data_storage.clear()
-            self.serial_data_read_module.port_name = None if self.Combobox_Port.get() == '无可用端口'else self.Combobox_Port.get()
+            if self.Combobox_Port.get() == '无可用端口':
+                self.serial_data_read_module.port_name = None
+                log.LogWarning(log.Warning_Index.DoNotFindPort)
+            else:
+                self.serial_data_read_module.port_name = self.Combobox_Port.get()
+            
             self.serial_data_read_module.baud_rate = int(self.Combobox_Baud_Rate.get())
             self.serial_data_read_module.received_header = self.received_header.get()
             #打开串口
             serial_port_is_open = self.serial_data_read_module.OpenSerialPort()
-            if serial_port_is_open:
-                self.port_is_open = True
-                self.Button_On_Off_Port['text'] = '关闭端口'
+            if serial_port_is_open: #串口打开成功
+                log.LogInfo(log.Info_Index.PortIsOpen)
+                self.port_is_open = True #设置当前状态为串口打开
+                self.Button_On_Off_Port['text'] = '关闭端口' #更改开关状态
                 self.Label_On_Off_Port['bg'] = 'green'
                 
                 #设置状态
-                self.Combobox_Port.configure(state='disabled')
-                self.Combobox_Baud_Rate.configure(state='disabled')
+                self.Combobox_Port.configure(state='disabled') #串口打开状态下不能更改串口号
+                self.Combobox_Baud_Rate.configure(state='disabled') #串口打开状态下不能更改波特率
                 
                 #开始接收数据
-                self.is_receive_data = True
-                # self.Receive_Data()
+                self.is_receive_data = True #设置当前状态为接收数据
+                # self.Receive_Data() #开始接收数据
+                log.LogInfo(log.Info_Index.PortIsReceivingData)
                 # self.UpdateDataLabels()#更新接收数据的标签
                 # self.UpdateGraph()
-                
+
             else:
                 #在输出的信息框中显示错误信息
-                pass
+                log.LogError(log.Error_Index.PortOpenFailed)
         else:
             serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
             if serial_port_is_not_open:
+                log.LogInfo(log.Info_Index.PortIsClose)
                 self.port_is_open = False
                 self.is_receive_data = False
                 self.Button_On_Off_Port['text'] = '打开端口'
@@ -273,9 +286,59 @@ class SerialPortModel(tk.Frame):
             else:
                 #在输出的信息框中显示错误信息
                 pass
+    
+    
+    # def Receive_Data(self) -> int:
+    #     '''接收数据'''
+    #     if self.is_receive_data == False:#如果不接收数据，停止执行
+    #         return
+    #     if self.start_time == None:
+    #         self.start_time = dt.datetime.now()
+    #     #如果超过2000ms秒没有接收到数据，关闭串口
+    #     MAX_STOP_TIME = 2000
+    #     if self.data_storage.__len__() == 0 and dt.datetime.now() - self.start_time > dt.timedelta(milliseconds=MAX_STOP_TIME):
+    #         self.On_Off_Port()
+    #         return
+    #     elif self.data_storage.__len__() > 0 and dt.datetime.now() - self.data_storage[-1].get('time') > dt.timedelta(milliseconds=MAX_STOP_TIME):
+    #         self.On_Off_Port()
+    #         return
+        
+    #     self.root.after(self.read_data_interval, self.Receive_Data)  #调用自身，实现x毫秒的间隔
+        
+    #     data_send_state = self.serial_data_read_module.SendData()#发送数据，激活c板发回数据
+    #     data_read_state = self.serial_data_read_module.ReadData()#读取数据
+    #     if data_read_state == spl.READ_FAILED or data_send_state == spl.SEND_FAILED:
+    #         self.On_Off_Port()#如果读取数据失败，关闭串口
             
-            
-    def BlankFunction(self):
+    #     elif data_read_state == spl.READ_SUCCESSFULLY:
+    #         current_time = dt.datetime.now()#获取当前时间
+    #         data_dict = self.serial_data_read_module.received_data.copy()#获取数据字典
+    #         data_dict['time'] = current_time
+    #         self.data_storage.append(data_dict)#添加新数据
+    #         self.MaintainDataStorageLength()
+    #         #在文本框中输出数据
+    #         if self.show_state == DECODED_DATA:
+    #             if self.serial_data_read_module.received_data_update:
+    #                 #处理数据内容
+    #                 show_data = []
+                    
+    #                 show_data.append(dt.datetime.strftime(current_time,'[%H:%M:%S.%f]'))
+    #                 for data_label in self.serial_data_read_module.received_data:
+    #                     if data_label in ['header','length','check_sum']:
+    #                         continue
+    #                     show_data.append(data_label + '=' + str(self.serial_data_read_module.received_data[data_label]))
+    #                 self.Text_Output_Data.delete('1.0','end') 
+    #                 if self.add_timestamp == ADD_TIMESTAMP:
+    #                     self.Text_Output_Data.insert('end','\n'.join(show_data)+'\n\n')#添加新的数据到输出框中
+    #                 elif self.add_timestamp == NO_TIMESTAMP:
+    #                     self.Text_Output_Data.insert('end','\n'.join(show_data[1:])+'\n\n')
+
+    #         else:
+    #             self.Text_Output_Data.delete('1.0','end') 
+    #             self.Text_Output_Data.insert('end','功能还未开发完全\n')
+
+
+    def BlankFunction(self) -> None:
         '''空函数，用于占位'''
         pass
 
@@ -679,10 +742,10 @@ class SerialPortAssistant():
     def __init__(self) -> None:
         '''初始化'''
         self.root = tk.Tk()
-        print('窗口已创建')
+        log.LogInfo(-1, '窗口已创建')
         self.serial_data_read_module = spl.Serial_Data_Read()
         self.version = 'V1.5.0'
-        print('版本已确认：' + self.version)
+        log.LogInfo(-1, '版本已确认：' + self.version)
         self.available_ports = serial.tools.list_ports.comports()
         self.show_state = DECODED_DATA
         self.add_timestamp = ADD_TIMESTAMP
@@ -892,128 +955,128 @@ class SerialPortAssistant():
         
 
 
-    def Combobox_SendData_Type_Selected(self,event):
-        index = self.Combobox_SendData_Name.current()
-        data_type = spl.txt_to_type.get(self.Combobox_SendData_Type.get().lower())
-        # if type(self.send_data_list[index][2]) != self.send_data_list[index][1]:
-        data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
-        if data_type == spl.UINT32_T:
-            data = int(data)
-        self.send_data_list[index][1] = data_type
-        self.send_data_list[index][2] = data
-        self.send_data_data.set(str(self.send_data_list[index][2]))
-        self.UpdatePreviewSendData(updata_state=MODIFY_SENDDATA,delete_index=index)
-        print(self.Combobox_SendData_Name.current())
-        print(self.send_data_list)
+    # def Combobox_SendData_Type_Selected(self,event):
+    #     index = self.Combobox_SendData_Name.current()
+    #     data_type = spl.txt_to_type.get(self.Combobox_SendData_Type.get().lower())
+    #     # if type(self.send_data_list[index][2]) != self.send_data_list[index][1]:
+    #     data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
+    #     if data_type == spl.UINT32_T:
+    #         data = int(data)
+    #     self.send_data_list[index][1] = data_type
+    #     self.send_data_list[index][2] = data
+    #     self.send_data_data.set(str(self.send_data_list[index][2]))
+    #     self.UpdatePreviewSendData(updata_state=MODIFY_SENDDATA,delete_index=index)
+    #     print(self.Combobox_SendData_Name.current())
+    #     print(self.send_data_list)
     
     
-    def Entry_SendData_Data_OnReturn(self,event):
-        index = self.Combobox_SendData_Name.current()
-        data_type = self.send_data_list[index][1]
-        data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
-        if data_type == spl.UINT32_T:
-            data = int(data)
-        self.send_data_list[index][2] = data
-        self.UpdatePreviewSendData(updata_state=MODIFY_SENDDATA,delete_index=index)
-        print(self.Combobox_SendData_Name.current())
-        print(self.send_data_list)
+    # def Entry_SendData_Data_OnReturn(self,event):
+    #     index = self.Combobox_SendData_Name.current()
+    #     data_type = self.send_data_list[index][1]
+    #     data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
+    #     if data_type == spl.UINT32_T:
+    #         data = int(data)
+    #     self.send_data_list[index][2] = data
+    #     self.UpdatePreviewSendData(updata_state=MODIFY_SENDDATA,delete_index=index)
+    #     print(self.Combobox_SendData_Name.current())
+    #     print(self.send_data_list)
 
     
-    def Combobox_SendData_Name_OnCtrlDel(self,event):#用于删除发送数据
-        # print(self.Combobox_SendData_Name.current())
-        index = self.Combobox_SendData_Name.current()
-        self.send_data_list.pop(index)
-        if self.send_data_list.__len__() == 0:
-            self.Combobox_SendData_Name.configure(values=[])
-            self.Combobox_SendData_Name.set('')
-            self.Combobox_SendData_Type.configure(state='disabled')
-            self.Entry_SendData_Data.configure(state='disabled')
-        else:#如果数据列表不为空则跳转到第一个发送数据
-            self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
-            self.Combobox_SendData_Name.current(0)
-            self.Combobox_SendData_Type.current(self.send_data_list[0][1])
-            self.send_data_data.set(str(self.send_data_list[0][2]))
-        self.UpdatePreviewSendData(updata_state=DELETE_SENDDATA, delete_index=index)
-        print(self.Combobox_SendData_Name.current())
-        print(self.send_data_list)
+    # def Combobox_SendData_Name_OnCtrlDel(self,event):#用于删除发送数据
+    #     # print(self.Combobox_SendData_Name.current())
+    #     index = self.Combobox_SendData_Name.current()
+    #     self.send_data_list.pop(index)
+    #     if self.send_data_list.__len__() == 0:
+    #         self.Combobox_SendData_Name.configure(values=[])
+    #         self.Combobox_SendData_Name.set('')
+    #         self.Combobox_SendData_Type.configure(state='disabled')
+    #         self.Entry_SendData_Data.configure(state='disabled')
+    #     else:#如果数据列表不为空则跳转到第一个发送数据
+    #         self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
+    #         self.Combobox_SendData_Name.current(0)
+    #         self.Combobox_SendData_Type.current(self.send_data_list[0][1])
+    #         self.send_data_data.set(str(self.send_data_list[0][2]))
+    #     self.UpdatePreviewSendData(updata_state=DELETE_SENDDATA, delete_index=index)
+    #     print(self.Combobox_SendData_Name.current())
+    #     print(self.send_data_list)
     
         
-    def Combobox_SendData_Name_OnKeyRelease(self,event):#用于输入内容及检测是否添加数据
-        if event.keysym == "Return":
-            # print('press Return')
-            if self.Combobox_SendData_Name.get() == '':
-                tkinter.messagebox.showwarning(title='提示', message='数据名称不能为空！')
-                # else:#如果数据名称为空则删除对应的发送数据
-                #     index = self.Combobox_SendData_Name.current()
-                #     self.send_data_list.pop(index)
-                #     self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
-                #     if self.send_data_list.__len__() == 0:
-                #         self.Combobox_SendData_Type.configure(state='disabled')
-                #         self.Entry_SendData_Data.configure(state='disabled')
-                #     else:#如果数据列表不为空则跳转到第一个发送数据
-                #         self.Combobox_SendData_Name.current(0)
-                #         self.Combobox_SendData_Type.current(self.send_data_list[0][1])
-                #         self.send_data_data.set(str(self.send_data_list[0][2]))
-            else:
-                if self.Combobox_SendData_Name.current() == -1:#发送数据名称不存在则添加新的发送数据
-                    self.Combobox_SendData_Type.configure(state='normal')
-                    self.Entry_SendData_Data.configure(state='normal')
-                    self.Combobox_SendData_Type.current(0)
-                    self.send_data_data.set('0')
+    # def Combobox_SendData_Name_OnKeyRelease(self,event):#用于输入内容及检测是否添加数据
+    #     if event.keysym == "Return":
+    #         # print('press Return')
+    #         if self.Combobox_SendData_Name.get() == '':
+    #             tkinter.messagebox.showwarning(title='提示', message='数据名称不能为空！')
+    #             # else:#如果数据名称为空则删除对应的发送数据
+    #             #     index = self.Combobox_SendData_Name.current()
+    #             #     self.send_data_list.pop(index)
+    #             #     self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
+    #             #     if self.send_data_list.__len__() == 0:
+    #             #         self.Combobox_SendData_Type.configure(state='disabled')
+    #             #         self.Entry_SendData_Data.configure(state='disabled')
+    #             #     else:#如果数据列表不为空则跳转到第一个发送数据
+    #             #         self.Combobox_SendData_Name.current(0)
+    #             #         self.Combobox_SendData_Type.current(self.send_data_list[0][1])
+    #             #         self.send_data_data.set(str(self.send_data_list[0][2]))
+    #         else:
+    #             if self.Combobox_SendData_Name.current() == -1:#发送数据名称不存在则添加新的发送数据
+    #                 self.Combobox_SendData_Type.configure(state='normal')
+    #                 self.Entry_SendData_Data.configure(state='normal')
+    #                 self.Combobox_SendData_Type.current(0)
+    #                 self.send_data_data.set('0')
                     
-                    data_name = self.Combobox_SendData_Name.get()
-                    data_type = spl.txt_to_type.get(self.Combobox_SendData_Type.get().lower())
-                    data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
-                    if data_type == spl.UINT32_T:
-                        data = int(data)
+    #                 data_name = self.Combobox_SendData_Name.get()
+    #                 data_type = spl.txt_to_type.get(self.Combobox_SendData_Type.get().lower())
+    #                 data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
+    #                 if data_type == spl.UINT32_T:
+    #                     data = int(data)
                         
-                    self.send_data_list.append([data_name, data_type, data])
+    #                 self.send_data_list.append([data_name, data_type, data])
                     
-                    self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
-                    self.UpdatePreviewSendData(updata_state=ADD_SENDDATA)
-                else:#如果数据名称存在则跳转到对应的发送数据
-                    name_index = self.Combobox_SendData_Name.current()
-                    self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
-                    self.send_data_data.set(str(self.send_data_list[name_index][2]))
+    #                 self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
+    #                 self.UpdatePreviewSendData(updata_state=ADD_SENDDATA)
+    #             else:#如果数据名称存在则跳转到对应的发送数据
+    #                 name_index = self.Combobox_SendData_Name.current()
+    #                 self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
+    #                 self.send_data_data.set(str(self.send_data_list[name_index][2]))
                     
-            print(self.Combobox_SendData_Name.current())
-            print(self.send_data_list)
-        else:
-        # elif '0' < event.keysym < '9' or 'A' < event.keysym < 'z' or event.keysym == "BackSpace" or event.keysym == "Delete":
-            if self.Combobox_SendData_Name.current() != -1:#如果数据名称存在则跳转到对应的发送数据
-                name_index = self.Combobox_SendData_Name.current()
-                self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
-                self.send_data_data.set(str(self.send_data_list[name_index][2]))
+    #         print(self.Combobox_SendData_Name.current())
+    #         print(self.send_data_list)
+    #     else:
+    #     # elif '0' < event.keysym < '9' or 'A' < event.keysym < 'z' or event.keysym == "BackSpace" or event.keysym == "Delete":
+    #         if self.Combobox_SendData_Name.current() != -1:#如果数据名称存在则跳转到对应的发送数据
+    #             name_index = self.Combobox_SendData_Name.current()
+    #             self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
+    #             self.send_data_data.set(str(self.send_data_list[name_index][2]))
 
     
-    def Combobox_SendData_Name_Selected(self,event):
-        name_index = self.Combobox_SendData_Name.current()
-        self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
-        self.send_data_data.set(str(self.send_data_list[name_index][2]))
+    # def Combobox_SendData_Name_Selected(self,event):
+    #     name_index = self.Combobox_SendData_Name.current()
+    #     self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
+    #     self.send_data_data.set(str(self.send_data_list[name_index][2]))
     
 
-    def UpdatePreviewSendData(self, updata_state, delete_index=0):
-        '''
-        ### 更新预览发送数据\n
-        预览的发送数据格式如下：\n
-        'name[type] = data'
-        '''
-        row_offset = 2
-        self.Text_Preview_SendData.delete("1.7", "2.0-1c")
-        self.Text_Preview_SendData.insert("1.7",str(self.send_data_list.__len__()))
-        if updata_state == ADD_SENDDATA:
-            data_name = self.send_data_list[-1][0]
-            data_type = self.send_data_list[-1][1]
-            data = self.send_data_list[-1][2]
-            self.Text_Preview_SendData.insert(tk.END,f"{data_name}[{spl.type_to_txt[data_type]}] = {data}\n")
-        elif updata_state == DELETE_SENDDATA:
-            self.Text_Preview_SendData.delete(f"{delete_index + row_offset + 1}.0", f"{delete_index + row_offset + 2}.0")
-        elif updata_state == MODIFY_SENDDATA:
-            data_name = self.send_data_list[delete_index][0]
-            data_type = self.send_data_list[delete_index][1]
-            data = self.send_data_list[delete_index][2]
-            self.Text_Preview_SendData.delete(f"{delete_index + row_offset + 1}.0", f"{delete_index + row_offset + 2}.0")
-            self.Text_Preview_SendData.insert(f"{delete_index + row_offset + 1}.0",f"{data_name}[{spl.type_to_txt[data_type]}] = {data}\n")
+    # def UpdatePreviewSendData(self, updata_state, delete_index=0):
+    #     '''
+    #     ### 更新预览发送数据\n
+    #     预览的发送数据格式如下：\n
+    #     'name[type] = data'
+    #     '''
+    #     row_offset = 2
+    #     self.Text_Preview_SendData.delete("1.7", "2.0-1c")
+    #     self.Text_Preview_SendData.insert("1.7",str(self.send_data_list.__len__()))
+    #     if updata_state == ADD_SENDDATA:
+    #         data_name = self.send_data_list[-1][0]
+    #         data_type = self.send_data_list[-1][1]
+    #         data = self.send_data_list[-1][2]
+    #         self.Text_Preview_SendData.insert(tk.END,f"{data_name}[{spl.type_to_txt[data_type]}] = {data}\n")
+    #     elif updata_state == DELETE_SENDDATA:
+    #         self.Text_Preview_SendData.delete(f"{delete_index + row_offset + 1}.0", f"{delete_index + row_offset + 2}.0")
+    #     elif updata_state == MODIFY_SENDDATA:
+    #         data_name = self.send_data_list[delete_index][0]
+    #         data_type = self.send_data_list[delete_index][1]
+    #         data = self.send_data_list[delete_index][2]
+    #         self.Text_Preview_SendData.delete(f"{delete_index + row_offset + 1}.0", f"{delete_index + row_offset + 2}.0")
+    #         self.Text_Preview_SendData.insert(f"{delete_index + row_offset + 1}.0",f"{data_name}[{spl.type_to_txt[data_type]}] = {data}\n")
                 
     
     def Entry_Samples_Number_OnMouseScroll(self,event):
@@ -1022,19 +1085,19 @@ class SerialPortAssistant():
         # if self.sample_number.get() < MIN_SAMPLES_NUMBER_DELTA:
         #     self.sample_number.set(MIN_SAMPLES_NUMBER_DELTA)
     
-    def Button_Clear_Output_Text_Click(self):
-        '''清空输出文本框'''
-        self.Text_Output_Data.delete('1.0','end') 
+    # def Button_Clear_Output_Text_Click(self):
+    #     '''清空输出文本框'''
+    #     self.Text_Output_Data.delete('1.0','end') 
         
         
-    def Combobox_Add_Timestamp_Selected(self, event):
-        '''选择是否添加时间戳'''
-        self.add_timestamp = self.Combobox_Add_Timestamp.current()
+    # def Combobox_Add_Timestamp_Selected(self, event):
+    #     '''选择是否添加时间戳'''
+    #     self.add_timestamp = self.Combobox_Add_Timestamp.current()
     
     
-    def Combobox_Show_State_Selected(self, event):
-        '''选择输出文本的设置'''
-        self.show_state = self.Combobox_Show_State.current()
+    # def Combobox_Show_State_Selected(self, event):
+    #     '''选择输出文本的设置'''
+    #     self.show_state = self.Combobox_Show_State.current()
     
     
     def MaintainDataStorageLength(self):
@@ -1069,54 +1132,54 @@ class SerialPortAssistant():
             print(666)
 
         
-    def Receive_Data(self):
-        '''接收数据'''
-        if self.is_receive_data == False:#如果不接收数据，停止执行
-            return
-        if self.start_time == None:
-            self.start_time = dt.datetime.now()
-        #如果超过2000ms秒没有接收到数据，关闭串口
-        MAX_STOP_TIME = 2000
-        if self.data_storage.__len__() == 0 and dt.datetime.now() - self.start_time > dt.timedelta(milliseconds=MAX_STOP_TIME):
-            self.On_Off_Port()
-            return
-        elif self.data_storage.__len__() > 0 and dt.datetime.now() - self.data_storage[-1].get('time') > dt.timedelta(milliseconds=MAX_STOP_TIME):
-            self.On_Off_Port()
-            return
+    # def Receive_Data(self):
+    #     '''接收数据'''
+    #     if self.is_receive_data == False:#如果不接收数据，停止执行
+    #         return
+    #     if self.start_time == None:
+    #         self.start_time = dt.datetime.now()
+    #     #如果超过2000ms秒没有接收到数据，关闭串口
+    #     MAX_STOP_TIME = 2000
+    #     if self.data_storage.__len__() == 0 and dt.datetime.now() - self.start_time > dt.timedelta(milliseconds=MAX_STOP_TIME):
+    #         self.On_Off_Port()
+    #         return
+    #     elif self.data_storage.__len__() > 0 and dt.datetime.now() - self.data_storage[-1].get('time') > dt.timedelta(milliseconds=MAX_STOP_TIME):
+    #         self.On_Off_Port()
+    #         return
         
-        self.root.after(self.read_data_interval, self.Receive_Data)  #调用自身，实现x毫秒的间隔
+    #     self.root.after(self.read_data_interval, self.Receive_Data)  #调用自身，实现x毫秒的间隔
         
-        data_send_state = self.serial_data_read_module.SendData()#发送数据，激活c板发回数据
-        data_read_state = self.serial_data_read_module.ReadData()#读取数据
-        if data_read_state == spl.READ_FAILED or data_send_state == spl.SEND_FAILED:
-            self.On_Off_Port()#如果读取数据失败，关闭串口
+    #     data_send_state = self.serial_data_read_module.SendData()#发送数据，激活c板发回数据
+    #     data_read_state = self.serial_data_read_module.ReadData()#读取数据
+    #     if data_read_state == spl.READ_FAILED or data_send_state == spl.SEND_FAILED:
+    #         self.On_Off_Port()#如果读取数据失败，关闭串口
             
-        elif data_read_state == spl.READ_SUCCESSFULLY:
-            current_time = dt.datetime.now()#获取当前时间
-            data_dict = self.serial_data_read_module.received_data.copy()#获取数据字典
-            data_dict['time'] = current_time
-            self.data_storage.append(data_dict)#添加新数据
-            self.MaintainDataStorageLength()
-            #在文本框中输出数据
-            if self.show_state == DECODED_DATA:
-                if self.serial_data_read_module.received_data_update:
-                    #处理数据内容
-                    show_data = []
+    #     elif data_read_state == spl.READ_SUCCESSFULLY:
+    #         current_time = dt.datetime.now()#获取当前时间
+    #         data_dict = self.serial_data_read_module.received_data.copy()#获取数据字典
+    #         data_dict['time'] = current_time
+    #         self.data_storage.append(data_dict)#添加新数据
+    #         self.MaintainDataStorageLength()
+    #         #在文本框中输出数据
+    #         if self.show_state == DECODED_DATA:
+    #             if self.serial_data_read_module.received_data_update:
+    #                 #处理数据内容
+    #                 show_data = []
                     
-                    show_data.append(dt.datetime.strftime(current_time,'[%H:%M:%S.%f]'))
-                    for data_label in self.serial_data_read_module.received_data:
-                        if data_label in ['header','length','check_sum']:
-                            continue
-                        show_data.append(data_label + '=' + str(self.serial_data_read_module.received_data[data_label]))
-                    self.Text_Output_Data.delete('1.0','end') 
-                    if self.add_timestamp == ADD_TIMESTAMP:
-                        self.Text_Output_Data.insert('end','\n'.join(show_data)+'\n\n')#添加新的数据到输出框中
-                    elif self.add_timestamp == NO_TIMESTAMP:
-                        self.Text_Output_Data.insert('end','\n'.join(show_data[1:])+'\n\n')
+    #                 show_data.append(dt.datetime.strftime(current_time,'[%H:%M:%S.%f]'))
+    #                 for data_label in self.serial_data_read_module.received_data:
+    #                     if data_label in ['header','length','check_sum']:
+    #                         continue
+    #                     show_data.append(data_label + '=' + str(self.serial_data_read_module.received_data[data_label]))
+    #                 self.Text_Output_Data.delete('1.0','end') 
+    #                 if self.add_timestamp == ADD_TIMESTAMP:
+    #                     self.Text_Output_Data.insert('end','\n'.join(show_data)+'\n\n')#添加新的数据到输出框中
+    #                 elif self.add_timestamp == NO_TIMESTAMP:
+    #                     self.Text_Output_Data.insert('end','\n'.join(show_data[1:])+'\n\n')
 
-            else:
-                self.Text_Output_Data.delete('1.0','end') 
-                self.Text_Output_Data.insert('end','功能还未开发完全\n')
+    #         else:
+    #             self.Text_Output_Data.delete('1.0','end') 
+    #             self.Text_Output_Data.insert('end','功能还未开发完全\n')
                 
         # elif data_read_state == spl.READ_CRC_ERROR:
         #     show_data = [dt.datetime.strftime(dt.datetime.now(),'[%H:%M:%S.%f]')]
@@ -1148,54 +1211,54 @@ class SerialPortAssistant():
         return data_struct_dict
 
 
-    def On_Off_Port(self):
-        '''打开/关闭串口'''
-        if self.Button_On_Off_Port['text'] == '打开端口':
-            #传入参数
-            self.data_storage.clear()
-            self.serial_data_read_module.port_name = None if self.Combobox_Port.get() == '无可用端口'else self.Combobox_Port.get()
-            self.serial_data_read_module.baud_rate = int(self.Combobox_Baud_Rate.get())
-            self.serial_data_read_module.received_header = self.received_header.get()
-            #打开串口
-            serial_port_is_open = self.serial_data_read_module.OpenSerialPort()
-            if serial_port_is_open:
-                self.port_is_open = True
-                self.Button_On_Off_Port['text'] = '关闭端口'
-                self.Label_On_Off_Port['bg'] = 'green'
+    # def On_Off_Port(self):
+    #     '''打开/关闭串口'''
+    #     if self.Button_On_Off_Port['text'] == '打开端口':
+    #         #传入参数
+    #         self.data_storage.clear()
+    #         self.serial_data_read_module.port_name = None if self.Combobox_Port.get() == '无可用端口'else self.Combobox_Port.get()
+    #         self.serial_data_read_module.baud_rate = int(self.Combobox_Baud_Rate.get())
+    #         self.serial_data_read_module.received_header = self.received_header.get()
+    #         #打开串口
+    #         serial_port_is_open = self.serial_data_read_module.OpenSerialPort()
+    #         if serial_port_is_open:
+    #             self.port_is_open = True
+    #             self.Button_On_Off_Port['text'] = '关闭端口'
+    #             self.Label_On_Off_Port['bg'] = 'green'
                 
-                #设置状态
-                self.Combobox_Port.configure(state='disabled')
-                self.Combobox_Baud_Rate.configure(state='disabled')
-                self.Text_Preview_SendData.configure(state='disabled')
+    #             #设置状态
+    #             self.Combobox_Port.configure(state='disabled')
+    #             self.Combobox_Baud_Rate.configure(state='disabled')
+    #             self.Text_Preview_SendData.configure(state='disabled')
                 
-                #开始接收数据
-                self.is_receive_data = True
-                self.Receive_Data()
-                self.UpdateDataLabels()#更新接收数据的标签
-                self.UpdateGraph()
+    #             #开始接收数据
+    #             self.is_receive_data = True
+    #             self.Receive_Data()
+    #             self.UpdateDataLabels()#更新接收数据的标签
+    #             self.UpdateGraph()
                 
-            else:
-                #在输出的信息框中显示错误信息
-                pass
-        else:
-            serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
-            if serial_port_is_not_open:
-                self.port_is_open = False
-                self.is_receive_data = False
-                self.Button_On_Off_Port['text'] = '打开端口'
-                self.Label_On_Off_Port['bg'] = 'red'
-                #设置状态
-                self.Combobox_Port.configure(state='readonly')
-                self.Combobox_Baud_Rate.configure(state='readonly')
-                # self.Text_SendData_Structure.configure(state='normal')
-                #更新串口列表
-                self.UpdateSerialPortList()
-                #清除储存的数据
-                self.data_storage.clear()
-                self.start_time = None
-            else:
-                #在输出的信息框中显示错误信息
-                pass
+    #         else:
+    #             #在输出的信息框中显示错误信息
+    #             pass
+    #     else:
+    #         serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
+    #         if serial_port_is_not_open:
+    #             self.port_is_open = False
+    #             self.is_receive_data = False
+    #             self.Button_On_Off_Port['text'] = '打开端口'
+    #             self.Label_On_Off_Port['bg'] = 'red'
+    #             #设置状态
+    #             self.Combobox_Port.configure(state='readonly')
+    #             self.Combobox_Baud_Rate.configure(state='readonly')
+    #             # self.Text_SendData_Structure.configure(state='normal')
+    #             #更新串口列表
+    #             self.UpdateSerialPortList()
+    #             #清除储存的数据
+    #             self.data_storage.clear()
+    #             self.start_time = None
+    #         else:
+    #             #在输出的信息框中显示错误信息
+    #             pass
 
 
     def UpdateDataLabels(self):
@@ -1209,14 +1272,14 @@ class SerialPortAssistant():
             self.Combobox_Output_Data_Label.current(0)
         
         
-    def UpdateSerialPortList(self):
-        '''更新串口列表'''
-        # 获取可用的串口端口信息
-        self.available_ports = serial.tools.list_ports.comports()
-        port_name_list = list(list(zip(*list(map(list,self.available_ports))))[0]) if len(self.available_ports) > 0 else ['无可用端口']
-        self.Combobox_Port.configure(values=port_name_list)
-        if self.Combobox_Port.get() not in port_name_list:
-            self.Combobox_Port.current(0)
+    # def UpdateSerialPortList(self):
+    #     '''更新串口列表'''
+    #     # 获取可用的串口端口信息
+    #     self.available_ports = serial.tools.list_ports.comports()
+    #     port_name_list = list(list(zip(*list(map(list,self.available_ports))))[0]) if len(self.available_ports) > 0 else ['无可用端口']
+    #     self.Combobox_Port.configure(values=port_name_list)
+    #     if self.Combobox_Port.get() not in port_name_list:
+    #         self.Combobox_Port.current(0)
         
     def RunApp(self):
         '''运行程序'''
@@ -1237,6 +1300,6 @@ class SerialPortAssistant():
 
 spa = SerialPortAssistant()
 spa.InitUI()
-print('界面初始化完成')
-print('程序运行中...')
+log.LogInfo(-1, '界面初始化完成')
+log.LogInfo(-1, '程序运行中...')
 spa.RunApp()

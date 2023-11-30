@@ -292,7 +292,7 @@ class Serial_Data_Read():
                 print("串口打开失败！")
                 return False
         else:
-            print("无可用端口！")
+            # print("无可用端口！")
             return False
         
         
