@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import sys
+from enum import Enum
 
 import SerialPortAssistant_lib as spl
 import Help_Windows as hw
@@ -32,6 +33,11 @@ NO_SHOW_IMAGE = 1
 MAX_DATA_STORAGE_LENGTH = 5000
 #采样点个数变化最小值
 MIN_SAMPLES_NUMBER_DELTA = 10
+
+class Const():
+    READ_DATA_INTERVAL = 100 #(ms)
+    MAX_DATA_STORAGE_LENGTH = 5000 #数据储存区的最大长度
+    
 
 
 def BlankFunction():
@@ -101,6 +107,7 @@ class SerialPortModel(tk.Frame):
         self.received_header = tk.StringVar()
         self.received_header.set('6A')
         self.data_storage = []
+        self.start_time = None
         
         self.port_is_open = False
         self.is_receive_data = False
@@ -251,14 +258,14 @@ class SerialPortModel(tk.Frame):
                 self.port_is_open = True #设置当前状态为串口打开
                 self.Button_On_Off_Port['text'] = '关闭端口' #更改开关状态
                 self.Label_On_Off_Port['bg'] = 'green'
-                
+
                 #设置状态
                 self.Combobox_Port.configure(state='disabled') #串口打开状态下不能更改串口号
                 self.Combobox_Baud_Rate.configure(state='disabled') #串口打开状态下不能更改波特率
-                
+
                 #开始接收数据
                 self.is_receive_data = True #设置当前状态为接收数据
-                # self.Receive_Data() #开始接收数据
+                self.Receive_Data() #开始接收数据
                 log.LogInfo(log.Info_Index.PortIsReceivingData)
                 # self.UpdateDataLabels()#更新接收数据的标签
                 # self.UpdateGraph()
@@ -286,56 +293,73 @@ class SerialPortModel(tk.Frame):
             else:
                 #在输出的信息框中显示错误信息
                 pass
-    
-    
-    # def Receive_Data(self) -> int:
-    #     '''接收数据'''
-    #     if self.is_receive_data == False:#如果不接收数据，停止执行
-    #         return
-    #     if self.start_time == None:
-    #         self.start_time = dt.datetime.now()
-    #     #如果超过2000ms秒没有接收到数据，关闭串口
-    #     MAX_STOP_TIME = 2000
-    #     if self.data_storage.__len__() == 0 and dt.datetime.now() - self.start_time > dt.timedelta(milliseconds=MAX_STOP_TIME):
-    #         self.On_Off_Port()
-    #         return
-    #     elif self.data_storage.__len__() > 0 and dt.datetime.now() - self.data_storage[-1].get('time') > dt.timedelta(milliseconds=MAX_STOP_TIME):
-    #         self.On_Off_Port()
-    #         return
-        
-    #     self.root.after(self.read_data_interval, self.Receive_Data)  #调用自身，实现x毫秒的间隔
-        
-    #     data_send_state = self.serial_data_read_module.SendData()#发送数据，激活c板发回数据
-    #     data_read_state = self.serial_data_read_module.ReadData()#读取数据
-    #     if data_read_state == spl.READ_FAILED or data_send_state == spl.SEND_FAILED:
-    #         self.On_Off_Port()#如果读取数据失败，关闭串口
-            
-    #     elif data_read_state == spl.READ_SUCCESSFULLY:
-    #         current_time = dt.datetime.now()#获取当前时间
-    #         data_dict = self.serial_data_read_module.received_data.copy()#获取数据字典
-    #         data_dict['time'] = current_time
-    #         self.data_storage.append(data_dict)#添加新数据
-    #         self.MaintainDataStorageLength()
-    #         #在文本框中输出数据
-    #         if self.show_state == DECODED_DATA:
-    #             if self.serial_data_read_module.received_data_update:
-    #                 #处理数据内容
-    #                 show_data = []
-                    
-    #                 show_data.append(dt.datetime.strftime(current_time,'[%H:%M:%S.%f]'))
-    #                 for data_label in self.serial_data_read_module.received_data:
-    #                     if data_label in ['header','length','check_sum']:
-    #                         continue
-    #                     show_data.append(data_label + '=' + str(self.serial_data_read_module.received_data[data_label]))
-    #                 self.Text_Output_Data.delete('1.0','end') 
-    #                 if self.add_timestamp == ADD_TIMESTAMP:
-    #                     self.Text_Output_Data.insert('end','\n'.join(show_data)+'\n\n')#添加新的数据到输出框中
-    #                 elif self.add_timestamp == NO_TIMESTAMP:
-    #                     self.Text_Output_Data.insert('end','\n'.join(show_data[1:])+'\n\n')
 
-    #         else:
-    #             self.Text_Output_Data.delete('1.0','end') 
-    #             self.Text_Output_Data.insert('end','功能还未开发完全\n')
+
+    def MaintainDataStorageLength(self) -> bool:
+        '''维持数据储存区长度，并返回是否达到最长长度'''
+        res = False
+        while len(self.data_storage) > Const.MAX_DATA_STORAGE_LENGTH:
+            self.data_storage.pop(0)
+            if not res:
+                res = True
+        return res
+
+
+    def Receive_Data(self) -> int:
+        '''接收数据'''
+        if self.is_receive_data == False:#如果不接收数据，停止执行
+            log.LogInfo(log.Info_Index.PortIsNotReceivingData)
+            self.start_time = None
+            return
+        if self.start_time == None:
+            self.start_time = dt.datetime.now()
+        #如果超过1000ms秒没有接收到数据，关闭串口
+        MAX_STOP_TIME = 1000 #(ms)
+        if self.data_storage.__len__() == 0 and dt.datetime.now() - self.start_time > dt.timedelta(milliseconds=MAX_STOP_TIME):
+            # 打开串口后一直没有接收到数据，关闭串口
+            log.LogWarning(log.Warning_Index.HaveNotReceiveAnyData)
+            self.On_Off_Port_Click()
+            return
+        elif self.data_storage.__len__() > 0 and dt.datetime.now() - self.data_storage[-1].get('time') > dt.timedelta(milliseconds=MAX_STOP_TIME):
+            log.LogWarning(log.Warning_Index.HaveNotReceiveAnyData)
+            self.On_Off_Port_Click()
+            return
+        log.LogInfo(log.Info_Index.Custom,f"已存储{self.data_storage.__len__()}个数据")
+
+        data_send_state = self.serial_data_read_module.SendData()#发送数据，激活c板发回数据
+        data_read_state = self.serial_data_read_module.ReadData()#读取数据
+        if data_read_state == spl.READ_FAILED or data_send_state == spl.SEND_FAILED:
+            log.LogError(log.Error_Index.PortReadFailed)
+            self.On_Off_Port_Click()#如果读取数据失败，关闭串口
+        elif data_read_state == spl.READ_SUCCESSFULLY:
+            current_time = dt.datetime.now()#获取当前时间
+            data_dict = self.serial_data_read_module.received_data.copy()#获取数据字典
+            data_dict['time'] = current_time
+            self.data_storage.append(data_dict)#添加新数据
+            self.MaintainDataStorageLength()
+            # #在文本框中输出数据
+            # if self.show_state == DECODED_DATA:
+            #     if self.serial_data_read_module.received_data_update:
+            #         #处理数据内容
+            #         show_data = []
+                    
+            #         show_data.append(dt.datetime.strftime(current_time,'[%H:%M:%S.%f]'))
+            #         for data_label in self.serial_data_read_module.received_data:
+            #             if data_label in ['header','length','check_sum']:
+            #                 continue
+            #             show_data.append(data_label + '=' + str(self.serial_data_read_module.received_data[data_label]))
+            #         self.Text_Output_Data.delete('1.0','end') 
+            #         if self.add_timestamp == ADD_TIMESTAMP:
+            #             self.Text_Output_Data.insert('end','\n'.join(show_data)+'\n\n')#添加新的数据到输出框中
+            #         elif self.add_timestamp == NO_TIMESTAMP:
+            #             self.Text_Output_Data.insert('end','\n'.join(show_data[1:])+'\n\n')
+            # else:
+            #     self.Text_Output_Data.delete('1.0','end') 
+            #     self.Text_Output_Data.insert('end','功能还未开发完全\n')
+
+        # self.root.after(self.read_data_interval, self.Receive_Data)  #调用自身，实现x毫秒的间隔
+        # self.master.after(self.read_data_interval, self.Receive_Data)  #调用自身，实现x毫秒的间隔
+        self.master.after(Const.READ_DATA_INTERVAL, self.Receive_Data)  #调用自身，实现x毫秒的间隔
 
 
     def BlankFunction(self) -> None:
