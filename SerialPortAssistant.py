@@ -37,6 +37,7 @@ MIN_SAMPLES_NUMBER_DELTA = 10
 class Const():
     READ_DATA_INTERVAL = 100 #(ms)
     MAX_DATA_STORAGE_LENGTH = 5000 #(个)数据储存区的最大长度
+    MIN_SAMPLES_NUMBER_DELTA = 100
     
 
 
@@ -222,7 +223,7 @@ class SerialPortModel(tk.Frame):
 
     def Entry_Samples_Number_OnMouseScroll(self,event) -> None:
         '''鼠标滚轮滚动时增减采样点个数'''
-        self.sample_number.set(self.sample_number.get()+event.delta//120*MIN_SAMPLES_NUMBER_DELTA)
+        self.sample_number.set(self.sample_number.get()+event.delta//120*Const.MIN_SAMPLES_NUMBER_DELTA)
 
 
     def UpdateSerialPortList(self) -> None:
@@ -265,8 +266,6 @@ class SerialPortModel(tk.Frame):
                 is_receive_data = True #设置当前状态为接收数据
                 self.Receive_Data() #开始接收数据
                 log.LogInfo(log.Info_Index.PortIsReceivingData)
-                # self.UpdateDataLabels()#更新接收数据的标签
-                # self.UpdateGraph()
 
             else:
                 #在输出的信息框中显示错误信息
