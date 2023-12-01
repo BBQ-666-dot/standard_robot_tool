@@ -40,9 +40,9 @@ class Const():
     MIN_SAMPLES_NUMBER_DELTA = 100
 
 
-data_storage = []
-port_is_open = False
-is_receive_data = False
+# data_storage = []
+# port_is_open = False
+# is_receive_data = False
 
 
 def BlankFunction():
@@ -164,6 +164,10 @@ class SerialPortModel(tk.Frame):
         self.received_header = tk.StringVar()
         self.received_header.set('6A')
         self.start_time = None
+        
+        self.data_storage = []#数据储存区
+        self.port_is_open = False
+        self.is_receive_data = False
 
 
     def AddWidget(self) -> None:
@@ -292,10 +296,9 @@ class SerialPortModel(tk.Frame):
 
     def On_Off_Port_Click(self) -> None:
         '''打开/关闭串口'''
-        global data_storage,port_is_open,is_receive_data
         if self.Button_On_Off_Port['text'] == '打开端口':
             #传入参数
-            data_storage.clear()
+            self.data_storage.clear()
             if self.Combobox_Port.get() == '无可用端口':
                 self.serial_data_read_module.port_name = None
                 log.LogWarning(log.Warning_Index.DoNotFindPort)
@@ -308,7 +311,7 @@ class SerialPortModel(tk.Frame):
             serial_port_is_open = self.serial_data_read_module.OpenSerialPort()
             if serial_port_is_open: #串口打开成功
                 log.LogInfo(log.Info_Index.PortIsOpen)
-                port_is_open = True #设置当前状态为串口打开
+                self.port_is_open = True #设置当前状态为串口打开
                 self.Button_On_Off_Port['text'] = '关闭端口' #更改开关状态
                 self.Label_On_Off_Port['bg'] = 'green'
 
@@ -317,7 +320,7 @@ class SerialPortModel(tk.Frame):
                 self.Combobox_Baud_Rate.configure(state='disabled') #串口打开状态下不能更改波特率
 
                 #开始接收数据
-                is_receive_data = True #设置当前状态为接收数据
+                self.is_receive_data = True #设置当前状态为接收数据
                 self.Receive_Data() #开始接收数据
                 log.LogInfo(log.Info_Index.PortIsReceivingData)
                 self.CallUpdateGraph() #开始更新显示图像
@@ -329,8 +332,8 @@ class SerialPortModel(tk.Frame):
             serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
             if serial_port_is_not_open:
                 log.LogInfo(log.Info_Index.PortIsClose)
-                port_is_open = False
-                is_receive_data = False
+                self.port_is_open = False
+                self.is_receive_data = False
                 self.Button_On_Off_Port['text'] = '打开端口'
                 self.Label_On_Off_Port['bg'] = 'red'
                 #设置状态
@@ -340,7 +343,7 @@ class SerialPortModel(tk.Frame):
                 #更新串口列表
                 self.UpdateSerialPortList()
                 #清除储存的数据
-                data_storage.clear()
+                self.data_storage.clear()
                 self.start_time = None
             else:
                 #在输出的信息框中显示错误信息
@@ -349,10 +352,9 @@ class SerialPortModel(tk.Frame):
 
     def MaintainDataStorageLength(self) -> bool:
         '''维持数据储存区长度，并返回是否达到最长长度'''
-        global data_storage
         res = False
-        while len(data_storage) > Const.MAX_DATA_STORAGE_LENGTH:
-            data_storage.pop(0)
+        while len(self.data_storage) > Const.MAX_DATA_STORAGE_LENGTH:
+            self.data_storage.pop(0)
             if not res:
                 res = True
         return res
@@ -360,8 +362,7 @@ class SerialPortModel(tk.Frame):
 
     def Receive_Data(self) -> None:
         '''接收数据'''
-        global data_storage,is_receive_data
-        if is_receive_data == False:#如果不接收数据，停止执行
+        if self.is_receive_data == False:#如果不接收数据，停止执行
             log.LogInfo(log.Info_Index.PortIsNotReceivingData)
             self.start_time = None
             return
@@ -369,16 +370,16 @@ class SerialPortModel(tk.Frame):
             self.start_time = dt.datetime.now()
         #如果超过1000ms秒没有接收到数据，关闭串口
         MAX_STOP_TIME = 1000 #(ms)
-        if data_storage.__len__() == 0 and dt.datetime.now() - self.start_time > dt.timedelta(milliseconds=MAX_STOP_TIME):
+        if self.data_storage.__len__() == 0 and dt.datetime.now() - self.start_time > dt.timedelta(milliseconds=MAX_STOP_TIME):
             # 打开串口后一直没有接收到数据，关闭串口
             log.LogWarning(log.Warning_Index.HaveNotReceiveAnyData)
             self.On_Off_Port_Click()
             return
-        elif data_storage.__len__() > 0 and dt.datetime.now() - data_storage[-1].get('time') > dt.timedelta(milliseconds=MAX_STOP_TIME):
+        elif self.data_storage.__len__() > 0 and dt.datetime.now() - self.data_storage[-1].get('time') > dt.timedelta(milliseconds=MAX_STOP_TIME):
             log.LogWarning(log.Warning_Index.HaveNotReceiveAnyData)
             self.On_Off_Port_Click()
             return
-        log.LogInfo(log.Info_Index.Custom,f"已存储{data_storage.__len__()}个数据")
+        log.LogInfo(log.Info_Index.Custom,f"已存储{self.data_storage.__len__()}个数据")
 
         data_send_state = self.serial_data_read_module.SendData()#发送数据，激活c板发回数据
         data_read_state = self.serial_data_read_module.ReadData()#读取数据
@@ -389,7 +390,7 @@ class SerialPortModel(tk.Frame):
             current_time = dt.datetime.now()#获取当前时间
             data_dict = self.serial_data_read_module.received_data.copy()#获取数据字典
             data_dict['time'] = current_time
-            data_storage.append(data_dict)#添加新数据
+            self.data_storage.append(data_dict)#添加新数据
             self.MaintainDataStorageLength()
         self.master.after(Const.READ_DATA_INTERVAL, self.Receive_Data)  #调用自身，实现x毫秒的间隔
 
