@@ -38,16 +38,18 @@ class Const():
     READ_DATA_INTERVAL = 100 #(ms)
     MAX_DATA_STORAGE_LENGTH = 5000 #(个)数据储存区的最大长度
     MIN_SAMPLES_NUMBER_DELTA = 100
-    
+
+
+data_storage = []
+port_is_open = False
+is_receive_data = False
 
 
 def BlankFunction():
     '''空函数，用于占位'''
     print('BlankFunction')
 
-data_storage = []
-port_is_open = False
-is_receive_data = False
+
 
 class WaveFormCanavas(FigureCanvasTkAgg):
     '''波形图画布'''
@@ -81,6 +83,58 @@ class WaveFormCanavas(FigureCanvasTkAgg):
         self.ax.set_xlim(self.x[0], self.x[-1])
         self.draw()
 
+# class Decorate:
+#     def __init__(self, func):
+#         print("函数正在传入")
+#         self.func = func
+
+#     def __call__(self, *args, **kwargs):
+#         print("函数开始运行")
+#         self.func(*args, **kwargs)  # 如果有返回值，则要在最后面使用return返回
+#         print("函数运行结束")
+
+
+# @Decorate
+# def print_hello():
+#     print("hello")
+
+
+# print_hello()
+# print(print_hello.__name__)  # 发现报错
+# """
+# 相当于
+# print_hello = Decorate(print_hello)
+# print_hello()
+# """
+
+
+class PlotGraphModel(tk.Frame):
+    '''曲线图绘制模块'''
+    def __init__(self, master=None, **kwargs) -> None:
+        super().__init__(master, **kwargs)
+        self.is_drawing = False
+        self.test = False
+        
+        self.fig_2d, self.ax_2d = plt.subplots(figsize=(10,6))#(15,7.5)
+        self.plot_2d = spl.RealTimePlot_2D(self.ax_2d)
+        self.plot_2d.x_label = 'time(s)'
+
+
+    def __call__(self, *args, **kwargs):
+        self.UpdateGraphCallback()
+
+
+    def AddWidget(self):
+        self.canvas = FigureCanvasTkAgg(
+                        figure=self.fig_2d, 
+                        master=self
+                    )
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        # self.UpdateGraph()
+    
+    
+    def UpdateGraphCallback(self):
+        print(self.test)
 
 
 class ReceivedDataList(tk.Listbox):
@@ -266,6 +320,7 @@ class SerialPortModel(tk.Frame):
                 is_receive_data = True #设置当前状态为接收数据
                 self.Receive_Data() #开始接收数据
                 log.LogInfo(log.Info_Index.PortIsReceivingData)
+                self.CallUpdateGraph() #开始更新显示图像
 
             else:
                 #在输出的信息框中显示错误信息
@@ -303,7 +358,7 @@ class SerialPortModel(tk.Frame):
         return res
 
 
-    def Receive_Data(self) -> int:
+    def Receive_Data(self) -> None:
         '''接收数据'''
         global data_storage,is_receive_data
         if is_receive_data == False:#如果不接收数据，停止执行
@@ -337,6 +392,10 @@ class SerialPortModel(tk.Frame):
             data_storage.append(data_dict)#添加新数据
             self.MaintainDataStorageLength()
         self.master.after(Const.READ_DATA_INTERVAL, self.Receive_Data)  #调用自身，实现x毫秒的间隔
+
+
+    def CallUpdateGraph(self):
+        pass
 
 
     def BlankFunction(self) -> None:
@@ -599,10 +658,17 @@ class SendDataModel(tk.Frame):
 
 
 
-class ReceiveDataModel(tk.Frame):
-    '''数据发送模块，包含了数据发送的一些设置'''
+class ReceivedDataModel(tk.Frame):
+    '''已接收数据处理模块，处理已接收的数据'''
     def __init__(self, master=None, **kwargs) -> None:
         super().__init__(master, **kwargs)
+        self.is_drawing = False
+        self.test = False
+
+
+    # def __call__(self, *args: Any, **kwds: Any) -> None:
+    #     # return super().__call__(*args, **kwds)
+    #     self.UpdateReceivedDataPreviewCallback()
 
 
     def AddWidget(self):
@@ -699,6 +765,9 @@ class ReceiveDataModel(tk.Frame):
         '''选择是否添加时间戳'''
         self.add_timestamp = self.Combobox_Add_Timestamp.current()
 
+    def UpdateReceivedDataPreviewCallback(self) -> None:
+        print(self.test)
+        pass
 
 
 
@@ -745,7 +814,7 @@ class SerialPortAssistant():
         self.root = tk.Tk()
         log.LogInfo(-1, '窗口已创建')
         self.serial_data_read_module = spl.Serial_Data_Read()
-        self.version = 'V1.5.0'
+        self.version = 'V1.6.0'
         log.LogInfo(-1, '版本已确认：' + self.version)
         self.available_ports = serial.tools.list_ports.comports()
         self.show_state = DECODED_DATA
@@ -907,20 +976,26 @@ class SerialPortAssistant():
 
         
         #root/Frame_Plot
-        Frame_Plot_Area = tk.Frame(
-                        Frame_Plot,
-                        #relief='groove',bd=1
-                    )
-        Frame_Plot_Area.pack(side=tk.RIGHT)
+        # Frame_Plot_Area = tk.Frame(
+        #                 Frame_Plot,
+        #                 #relief='groove',bd=1
+        #             )
+        # Frame_Plot_Area.pack(side=tk.RIGHT)
         
         
-        #root/Frame_Plot/Frame_Plot_Area
-        self.canvas = FigureCanvasTkAgg(
-                        figure=self.fig_2d, 
-                        master=Frame_Plot_Area
-                    )
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        self.UpdateGraph()
+        # #root/Frame_Plot/Frame_Plot_Area
+        # self.canvas = FigureCanvasTkAgg(
+        #                 figure=self.fig_2d, 
+        #                 master=Frame_Plot_Area
+        #             )
+        # self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        # self.UpdateGraph()
+        
+        #图像绘制模块
+        self.plot_graph_model = PlotGraphModel(Frame_Plot)
+        self.plot_graph_model.AddWidget()
+        self.plot_graph_model.pack(side=tk.RIGHT)
+        
         
         #绑定函数实现交互功能
         # self.canvas.mpl_connect('button_press_event', self.plot_2d.on_button_press)
@@ -949,11 +1024,21 @@ class SerialPortAssistant():
         
 
         #数据接收模块
-        self.receive_data_model = ReceiveDataModel(Frame_Right)
-        self.receive_data_model.AddWidget()
-        self.receive_data_model.pack(side=tk.TOP)
+        self.received_data_model = ReceivedDataModel(Frame_Right)
+        self.received_data_model.AddWidget()
+        self.received_data_model.pack(side=tk.TOP)
         
-        
+        #test unit
+        self.received_data_model.test = True
+        self.plot_graph_model.test = True
+
+
+        #将回调函数建立连接
+        self.serial_port_model.CallUpdateGraph = self.plot_graph_model.UpdateGraphCallback
+
+
+
+
 
 
     # def Combobox_SendData_Type_Selected(self,event):
