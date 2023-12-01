@@ -36,6 +36,7 @@ MIN_SAMPLES_NUMBER_DELTA = 10
 
 class Const():
     READ_DATA_INTERVAL = 100 #(ms)
+    PLOT_TIME_INTERVAL = 100 #(ms)
     MAX_DATA_STORAGE_LENGTH = 5000 #(个)数据储存区的最大长度
     MIN_SAMPLES_NUMBER_DELTA = 100
 
@@ -118,10 +119,8 @@ class PlotGraphModel(tk.Frame):
         self.fig_2d, self.ax_2d = plt.subplots(figsize=(10,6))#(15,7.5)
         self.plot_2d = spl.RealTimePlot_2D(self.ax_2d)
         self.plot_2d.x_label = 'time(s)'
-
-
-    def __call__(self, *args, **kwargs):
-        self.UpdateGraphCallback()
+        
+        self.plot_data = []
 
 
     def AddWidget(self):
@@ -130,18 +129,53 @@ class PlotGraphModel(tk.Frame):
                         master=self
                     )
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        # self.UpdateGraph()
+        self.UpdateGraph()
     
     
-    def UpdateGraphCallback(self):
-        print(self.test)
+    def StartUpdatePlotGraphCallback(self):
+        self.is_drawing = True
+        self.UpdateGraph()
+
+
+    def StopUpdatePlotGraphCallback(self):
+        self.is_drawing = False
+
+
+    def UpdateGraph(self):
+        '''更新图像'''
+        if self.is_drawing == False: #如果不接收数据，停止执行
+            return
+        
+        print(self.is_drawing)
+        x = np.linspace(0, 2 * np.pi, 100)
+        y = np.sin(x)+np.random.rand(100)/10
+        
+        # TODO：将选择的图像数据显示在图像上
+        # TODO: 根据数据绘制图像
+        # x = [(data_dict.get('time') - self.start_time).total_seconds() for data_dict in data_storage]
+        # y = [data_dict.get(self.Combobox_Output_Data_Label.get()) for data_dict in data_storage]
+        
+        self.plot_2d.x = x
+        self.plot_2d.y = y
+        # self.plot_2d.title = self.Combobox_Output_Data_Label.get() + ' Waveform'
+        # self.plot_2d.y_label = self.Combobox_Output_Data_Label.get()
+        self.plot_2d.title = 'Waveform'
+        self.plot_2d.y_label = 'sin(x)'
+        self.plot_2d.update_plot()
+        self.canvas.draw()
+        
+        try:
+            self.master.after(Const.PLOT_TIME_INTERVAL, self.UpdateGraph)
+        except:
+            print(666)
 
 
 class ReceivedDataList(tk.Listbox):
     '''接收数据列表'''
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
-    
+
+
     def UpdateDataList(self,data_list:list) -> None:
         self.delete(0, tk.END)#考虑到短时间内不会大量更新数据表并且数据量普遍较小，所以每次都清空再添加
         for data_name in data_list:
@@ -323,7 +357,7 @@ class SerialPortModel(tk.Frame):
                 self.is_receive_data = True #设置当前状态为接收数据
                 self.Receive_Data() #开始接收数据
                 log.LogInfo(log.Info_Index.PortIsReceivingData)
-                self.CallUpdateGraph() #开始更新显示图像
+                self.CallStartUpdatePlotGraph() #开始更新显示图像
 
             else:
                 #在输出的信息框中显示错误信息
@@ -362,9 +396,10 @@ class SerialPortModel(tk.Frame):
 
     def Receive_Data(self) -> None:
         '''接收数据'''
-        if self.is_receive_data == False:#如果不接收数据，停止执行
+        if self.is_receive_data == False:#如果不接收数据，停止执行，同时停止绘图
             log.LogInfo(log.Info_Index.PortIsNotReceivingData)
             self.start_time = None
+            self.CallStopUpdatePlotGraph()#停止绘图
             return
         if self.start_time == None:
             self.start_time = dt.datetime.now()
@@ -395,9 +430,12 @@ class SerialPortModel(tk.Frame):
         self.master.after(Const.READ_DATA_INTERVAL, self.Receive_Data)  #调用自身，实现x毫秒的间隔
 
 
-    def CallUpdateGraph(self):
+    def CallStartUpdatePlotGraph(self):
         pass
 
+
+    def CallStopUpdatePlotGraph(self):
+        pass
 
     def BlankFunction(self) -> None:
         '''空函数，用于占位'''
@@ -1035,8 +1073,8 @@ class SerialPortAssistant():
 
 
         #将回调函数建立连接
-        self.serial_port_model.CallUpdateGraph = self.plot_graph_model.UpdateGraphCallback
-
+        self.serial_port_model.CallStartUpdatePlotGraph = self.plot_graph_model.StartUpdatePlotGraphCallback
+        self.serial_port_model.CallStopUpdatePlotGraph = self.plot_graph_model.StopUpdatePlotGraphCallback
 
 
 
