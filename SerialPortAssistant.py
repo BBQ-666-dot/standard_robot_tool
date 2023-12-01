@@ -35,7 +35,7 @@ MAX_DATA_STORAGE_LENGTH = 5000
 MIN_SAMPLES_NUMBER_DELTA = 10
 
 class Const():
-    READ_DATA_INTERVAL = 100 #(ms)
+    READ_DATA_INTERVAL = 1 #(ms)
     PLOT_TIME_INTERVAL = 100 #(ms)
     MAX_DATA_STORAGE_LENGTH = 5000 #(个)数据储存区的最大长度
     MIN_SAMPLES_NUMBER_DELTA = 100
@@ -84,29 +84,6 @@ class WaveFormCanavas(FigureCanvasTkAgg):
         self.ax.set_xlim(self.x[0], self.x[-1])
         self.draw()
 
-# class Decorate:
-#     def __init__(self, func):
-#         print("函数正在传入")
-#         self.func = func
-
-#     def __call__(self, *args, **kwargs):
-#         print("函数开始运行")
-#         self.func(*args, **kwargs)  # 如果有返回值，则要在最后面使用return返回
-#         print("函数运行结束")
-
-
-# @Decorate
-# def print_hello():
-#     print("hello")
-
-
-# print_hello()
-# print(print_hello.__name__)  # 发现报错
-# """
-# 相当于
-# print_hello = Decorate(print_hello)
-# print_hello()
-# """
 
 
 class PlotGraphModel(tk.Frame):
@@ -119,9 +96,11 @@ class PlotGraphModel(tk.Frame):
         self.fig_2d, self.ax_2d = plt.subplots(figsize=(10,6))#(15,7.5)
         self.plot_2d = spl.RealTimePlot_2D(self.ax_2d)
         self.plot_2d.x_label = 'time(s)'
+        self.plot_2d.y_label = 'values'
         
-        self.plot_data = []
-
+        self.start_time:dt.datetime = dt.datetime.now()
+        self.data_storage:list = []
+        self.sample_number_tkintvar:tk.IntVar = None
 
     def AddWidget(self):
         self.canvas = FigureCanvasTkAgg(
@@ -134,6 +113,7 @@ class PlotGraphModel(tk.Frame):
     
     def StartUpdatePlotGraphCallback(self):
         self.is_drawing = True
+        self.start_time = dt.datetime.now()
         self.UpdateGraph()
 
 
@@ -141,27 +121,30 @@ class PlotGraphModel(tk.Frame):
         self.is_drawing = False
 
 
+    def SelectPlotData(self) -> list:
+        show_namber = self.sample_number_tkintvar.get()
+        return self.data_storage[-show_namber:]
+        # if self.data_storage.__len__() <= show_namber:#如果数据量没有达到显示数量，则选择全部数据
+        #     return self.data_storage[:]
+        # else :  #否则选择最新的部分
+        #     return self.data_storage[-show_namber:]
+
+
     def UpdateGraph(self):
         '''更新图像'''
         if self.is_drawing == False: #如果不接收数据，停止执行
             return
         
-        print(self.is_drawing)
-        x = np.linspace(0, 2 * np.pi, 100)
-        y = np.sin(x)+np.random.rand(100)/10
+        x = np.linspace(0, 2 * np.pi, 1000)
+        y0 = np.sin(x)+np.random.rand(1000)/10
         
         # TODO：将选择的图像数据显示在图像上
-        # TODO: 根据数据绘制图像
-        # x = [(data_dict.get('time') - self.start_time).total_seconds() for data_dict in data_storage]
-        # y = [data_dict.get(self.Combobox_Output_Data_Label.get()) for data_dict in data_storage]
+        show_data_storage = self.SelectPlotData()
+        x = [(data_dict.get('time') - self.start_time).total_seconds() for data_dict in show_data_storage]
+        y = [data_dict.get("Pitch") for data_dict in show_data_storage]
         
-        self.plot_2d.x = x
-        self.plot_2d.y = y
-        # self.plot_2d.title = self.Combobox_Output_Data_Label.get() + ' Waveform'
-        # self.plot_2d.y_label = self.Combobox_Output_Data_Label.get()
         self.plot_2d.title = 'Waveform'
-        self.plot_2d.y_label = 'sin(x)'
-        self.plot_2d.update_plot()
+        self.plot_2d.UpdatePlot(x,[y,y0[-y.__len__():]],["Pitch","sin"])
         self.canvas.draw()
         
         try:
@@ -197,7 +180,7 @@ class SerialPortModel(tk.Frame):
         self.serial_data_read_module = spl.Serial_Data_Read()#串口数据读取模块
         self.received_header = tk.StringVar()
         self.received_header.set('6A')
-        self.start_time = None
+        self.start_time = dt.datetime.now()
         
         self.data_storage = []#数据储存区
         self.port_is_open = False
@@ -345,6 +328,7 @@ class SerialPortModel(tk.Frame):
             serial_port_is_open = self.serial_data_read_module.OpenSerialPort()
             if serial_port_is_open: #串口打开成功
                 log.LogInfo(log.Info_Index.PortIsOpen)
+                self.start_time = dt.datetime.now()#设置串口开始打开时间为当前时间
                 self.port_is_open = True #设置当前状态为串口打开
                 self.Button_On_Off_Port['text'] = '关闭端口' #更改开关状态
                 self.Label_On_Off_Port['bg'] = 'green'
@@ -364,6 +348,10 @@ class SerialPortModel(tk.Frame):
                 log.LogError(log.Error_Index.PortOpenFailed)
         else:
             serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
+            
+            # for data_dict in self.data_storage:
+            #     log.LogInfo(log.Info_Index.Custom,f"{data_dict}")
+                
             if serial_port_is_not_open:
                 log.LogInfo(log.Info_Index.PortIsClose)
                 self.port_is_open = False
@@ -378,7 +366,6 @@ class SerialPortModel(tk.Frame):
                 self.UpdateSerialPortList()
                 #清除储存的数据
                 self.data_storage.clear()
-                self.start_time = None
             else:
                 #在输出的信息框中显示错误信息
                 pass
@@ -398,11 +385,8 @@ class SerialPortModel(tk.Frame):
         '''接收数据'''
         if self.is_receive_data == False:#如果不接收数据，停止执行，同时停止绘图
             log.LogInfo(log.Info_Index.PortIsNotReceivingData)
-            self.start_time = None
             self.CallStopUpdatePlotGraph()#停止绘图
             return
-        if self.start_time == None:
-            self.start_time = dt.datetime.now()
         #如果超过1000ms秒没有接收到数据，关闭串口
         MAX_STOP_TIME = 1000 #(ms)
         if self.data_storage.__len__() == 0 and dt.datetime.now() - self.start_time > dt.timedelta(milliseconds=MAX_STOP_TIME):
@@ -1012,37 +996,13 @@ class SerialPortAssistant():
         self.Combobox_Output_Data_Label.pack(side=tk.TOP)
         self.Combobox_Output_Data_Label.current(0)
         
-
-        
-        #root/Frame_Plot
-        # Frame_Plot_Area = tk.Frame(
-        #                 Frame_Plot,
-        #                 #relief='groove',bd=1
-        #             )
-        # Frame_Plot_Area.pack(side=tk.RIGHT)
-        
-        
-        # #root/Frame_Plot/Frame_Plot_Area
-        # self.canvas = FigureCanvasTkAgg(
-        #                 figure=self.fig_2d, 
-        #                 master=Frame_Plot_Area
-        #             )
-        # self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        # self.UpdateGraph()
         
         #图像绘制模块
         self.plot_graph_model = PlotGraphModel(Frame_Plot)
         self.plot_graph_model.AddWidget()
         self.plot_graph_model.pack(side=tk.RIGHT)
         
-        
-        #绑定函数实现交互功能
-        # self.canvas.mpl_connect('button_press_event', self.plot_2d.on_button_press)
-        # self.canvas.mpl_connect('button_release_event', self.plot_2d.on_button_release)
-        # self.canvas.mpl_connect('motion_notify_event', self.plot_2d.on_mouse_move)
-        # self.canvas.mpl_connect('scroll_event', self.plot_2d.on_mouse_scroll)
-        
-        
+
         #root
         Frame_Right = tk.Frame(
                         self.root,
@@ -1076,6 +1036,9 @@ class SerialPortAssistant():
         self.serial_port_model.CallStartUpdatePlotGraph = self.plot_graph_model.StartUpdatePlotGraphCallback
         self.serial_port_model.CallStopUpdatePlotGraph = self.plot_graph_model.StopUpdatePlotGraphCallback
 
+        #相关变量建立连接
+        self.plot_graph_model.data_storage = self.serial_port_model.data_storage
+        self.plot_graph_model.sample_number_tkintvar = self.serial_port_model.sample_number
 
 
 
@@ -1223,98 +1186,7 @@ class SerialPortAssistant():
     # def Combobox_Show_State_Selected(self, event):
     #     '''选择输出文本的设置'''
     #     self.show_state = self.Combobox_Show_State.current()
-    
-    
-    def MaintainDataStorageLength(self):
-        '''维持数据储存区长度'''
-        max_data_storage_length = self.sample_number.get() if self.sample_number.get()>0 else MIN_SAMPLES_NUMBER_DELTA
-        while len(data_storage) > max_data_storage_length:
-            data_storage.pop(0)
         
-    
-    def UpdateGraph(self):
-        '''更新图像'''
-        if is_receive_data == False: #如果不接收数据，停止执行
-            return
-        
-        # x = np.linspace(0, 2 * np.pi, 100)
-        # y = np.sin(x)+np.random.rand(100)/10
-        
-        # TODO：将选择的图像数据显示在图像上
-        x = [(data_dict.get('time') - self.start_time).total_seconds() for data_dict in data_storage]
-        y = [data_dict.get(self.Combobox_Output_Data_Label.get()) for data_dict in data_storage]
-        
-        self.plot_2d.x = x
-        self.plot_2d.y = y
-        self.plot_2d.title = self.Combobox_Output_Data_Label.get() + ' Waveform'
-        self.plot_2d.y_label = self.Combobox_Output_Data_Label.get()
-        self.plot_2d.update_plot()
-        self.canvas.draw()
-        
-        try:
-            self.root.after(self.plot_time_interval, self.UpdateGraph)
-        except:
-            print(666)
-
-        
-    # def Receive_Data(self):
-    #     '''接收数据'''
-    #     if is_receive_data == False:#如果不接收数据，停止执行
-    #         return
-    #     if self.start_time == None:
-    #         self.start_time = dt.datetime.now()
-    #     #如果超过2000ms秒没有接收到数据，关闭串口
-    #     MAX_STOP_TIME = 2000
-    #     if data_storage.__len__() == 0 and dt.datetime.now() - self.start_time > dt.timedelta(milliseconds=MAX_STOP_TIME):
-    #         self.On_Off_Port()
-    #         return
-    #     elif data_storage.__len__() > 0 and dt.datetime.now() - data_storage[-1].get('time') > dt.timedelta(milliseconds=MAX_STOP_TIME):
-    #         self.On_Off_Port()
-    #         return
-        
-    #     self.root.after(self.read_data_interval, self.Receive_Data)  #调用自身，实现x毫秒的间隔
-        
-    #     data_send_state = self.serial_data_read_module.SendData()#发送数据，激活c板发回数据
-    #     data_read_state = self.serial_data_read_module.ReadData()#读取数据
-    #     if data_read_state == spl.READ_FAILED or data_send_state == spl.SEND_FAILED:
-    #         self.On_Off_Port()#如果读取数据失败，关闭串口
-            
-    #     elif data_read_state == spl.READ_SUCCESSFULLY:
-    #         current_time = dt.datetime.now()#获取当前时间
-    #         data_dict = self.serial_data_read_module.received_data.copy()#获取数据字典
-    #         data_dict['time'] = current_time
-    #         data_storage.append(data_dict)#添加新数据
-    #         self.MaintainDataStorageLength()
-    #         #在文本框中输出数据
-    #         if self.show_state == DECODED_DATA:
-    #             if self.serial_data_read_module.received_data_update:
-    #                 #处理数据内容
-    #                 show_data = []
-                    
-    #                 show_data.append(dt.datetime.strftime(current_time,'[%H:%M:%S.%f]'))
-    #                 for data_label in self.serial_data_read_module.received_data:
-    #                     if data_label in ['header','length','check_sum']:
-    #                         continue
-    #                     show_data.append(data_label + '=' + str(self.serial_data_read_module.received_data[data_label]))
-    #                 self.Text_Output_Data.delete('1.0','end') 
-    #                 if self.add_timestamp == ADD_TIMESTAMP:
-    #                     self.Text_Output_Data.insert('end','\n'.join(show_data)+'\n\n')#添加新的数据到输出框中
-    #                 elif self.add_timestamp == NO_TIMESTAMP:
-    #                     self.Text_Output_Data.insert('end','\n'.join(show_data[1:])+'\n\n')
-
-    #         else:
-    #             self.Text_Output_Data.delete('1.0','end') 
-    #             self.Text_Output_Data.insert('end','功能还未开发完全\n')
-                
-        # elif data_read_state == spl.READ_CRC_ERROR:
-        #     show_data = [dt.datetime.strftime(dt.datetime.now(),'[%H:%M:%S.%f]')]
-        #     show_data.append('CRC error')
-        #     self.Text_Output_Data.delete('1.0','end') 
-        #     if self.add_timestamp == ADD_TIMESTAMP:
-        #         self.Text_Output_Data.insert('end','\n'.join(show_data)+'\n\n')#添加新的数据到输出框中
-        #     elif self.add_timestamp == NO_TIMESTAMP:
-        #         self.Text_Output_Data.insert('end','\n'.join(show_data[1:])+'\n\n')
-
 
 
     def TextToDict(self, struct_text:str):
@@ -1336,56 +1208,6 @@ class SerialPortAssistant():
         return data_struct_dict
 
 
-    # def On_Off_Port(self):
-    #     '''打开/关闭串口'''
-    #     if self.Button_On_Off_Port['text'] == '打开端口':
-    #         #传入参数
-    #         data_storage.clear()
-    #         self.serial_data_read_module.port_name = None if self.Combobox_Port.get() == '无可用端口'else self.Combobox_Port.get()
-    #         self.serial_data_read_module.baud_rate = int(self.Combobox_Baud_Rate.get())
-    #         self.serial_data_read_module.received_header = self.received_header.get()
-    #         #打开串口
-    #         serial_port_is_open = self.serial_data_read_module.OpenSerialPort()
-    #         if serial_port_is_open:
-    #             port_is_open = True
-    #             self.Button_On_Off_Port['text'] = '关闭端口'
-    #             self.Label_On_Off_Port['bg'] = 'green'
-                
-    #             #设置状态
-    #             self.Combobox_Port.configure(state='disabled')
-    #             self.Combobox_Baud_Rate.configure(state='disabled')
-    #             self.Text_Preview_SendData.configure(state='disabled')
-                
-    #             #开始接收数据
-    #             is_receive_data = True
-    #             self.Receive_Data()
-    #             self.UpdateDataLabels()#更新接收数据的标签
-    #             self.UpdateGraph()
-                
-    #         else:
-    #             #在输出的信息框中显示错误信息
-    #             pass
-    #     else:
-    #         serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
-    #         if serial_port_is_not_open:
-    #             port_is_open = False
-    #             is_receive_data = False
-    #             self.Button_On_Off_Port['text'] = '打开端口'
-    #             self.Label_On_Off_Port['bg'] = 'red'
-    #             #设置状态
-    #             self.Combobox_Port.configure(state='readonly')
-    #             self.Combobox_Baud_Rate.configure(state='readonly')
-    #             # self.Text_SendData_Structure.configure(state='normal')
-    #             #更新串口列表
-    #             self.UpdateSerialPortList()
-    #             #清除储存的数据
-    #             data_storage.clear()
-    #             self.start_time = None
-    #         else:
-    #             #在输出的信息框中显示错误信息
-    #             pass
-
-
     def UpdateDataLabels(self):
         labels = list(data_storage[0].keys())
         labels.remove('time')
@@ -1396,15 +1218,6 @@ class SerialPortAssistant():
         if self.Combobox_Output_Data_Label.get() not in labels:
             self.Combobox_Output_Data_Label.current(0)
         
-        
-    # def UpdateSerialPortList(self):
-    #     '''更新串口列表'''
-    #     # 获取可用的串口端口信息
-    #     self.available_ports = serial.tools.list_ports.comports()
-    #     port_name_list = list(list(zip(*list(map(list,self.available_ports))))[0]) if len(self.available_ports) > 0 else ['无可用端口']
-    #     self.Combobox_Port.configure(values=port_name_list)
-    #     if self.Combobox_Port.get() not in port_name_list:
-    #         self.Combobox_Port.current(0)
         
     def RunApp(self):
         '''运行程序'''
