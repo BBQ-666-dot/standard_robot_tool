@@ -3,7 +3,10 @@
 ## 介绍
 串口调试助手，接受c板的数据并以图像形式展现出来
 
-配套使用的USB通信部分的代码文件：[USB串口通信模块](https://gitee.com/SMBU-POLARBEAR/electric-control/tree/master/Microcontroller_Module/USB_Serial_Communication_Module)
+配套使用的USB通信部分的代码文件：[USB串口通信模块](https://gitee.com/SMBU-POLARBEAR/Serial_Port_Assistant/tree/master/STM32_USB_task)
+- 将**Src**文件夹中的`usbd_cdc_if.c`替换为提供的同名文件
+- 将**Inc**文件夹中的`usbd_cdc_if.h`替换为提供的同名文件
+- 将**Application**文件夹中的`usb_task.c/h`替换为提供的同名文件
 
 ## 改进方向
 1. 绘制3维图的功能
