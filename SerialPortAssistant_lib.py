@@ -9,7 +9,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.axes as maxes
 # plt.rcParams['font.family'] = ['SimHei']  # replace with your installed Chinese font
-import datetime as dt
 import numpy as np
 import os
 import sys
@@ -106,21 +105,6 @@ class RealTimePlot_2D():
         self.x_label = ''
         self.y_label = ''
 
-        # self.ax._button_pressed = False
-        # self.ax._button_press_event = None
-        # self.ax._dragging = False
-        # self.ax._drag_start = (0, 0)
-        # self.ax._zoom_scale = 1.0
-        # self.ax._move_position = (0, 0)
-        
-        # self.mouse_prev_pos = None
-        # self.ax_prev_lim = None
-        # self.center_after_offset = (0, 0)
-        
-        # self.x = []
-        # self.y = []
-
-
 
     def UpdatePlot(self,x_axis_data:list,y_axis_data:list,y_labels:list) -> None:
         '''
@@ -188,7 +172,7 @@ class RealTimePlot_3D:
             self.ax.azim -= dx * 0.3
         
         plt.draw()
-        
+
 
 class Serial_Data_Read():
     def __init__(self):
@@ -211,8 +195,8 @@ class Serial_Data_Read():
         self.send_header = 'A6'
         self.send_data_update = False
         self.send_raw_data = []
-    
-    
+
+
     def OpenSerialPort(self):
         if self.port_name != None:
             self.ser.port=self.port_name    #端口，用与电脑相匹配
@@ -228,19 +212,19 @@ class Serial_Data_Read():
         else:
             # print("无可用端口！")
             return False
-        
-        
+
+
     def CloseSerialPort(self):
         self.ser.close()
         if(self.ser.isOpen()):
-            print("串口关闭失败！")
+            # print("串口关闭失败！")
             return False
         else:
-            print("串口关闭成功！")
+            # print("串口关闭成功！")
             return True
-            
-            
-    def ReadData(self):
+
+
+    def ReadData(self) -> int:
         try:
             self.ser.reset_input_buffer()# 清除接收数据的缓冲区
             
@@ -295,9 +279,9 @@ class Serial_Data_Read():
             return READ_HEADER_ERROR
         except:
             return READ_FAILED
-            
-            
-    
+
+
+
     def SendData(self):
         # 发送数据，数据格式为：起始符+数据+校验和
         try:
@@ -308,12 +292,12 @@ class Serial_Data_Read():
             return SEND_SUCCESSFULLY
         except:
             return SEND_FAILED
-    
-    
+
+
     def VarifyCRC(self,received_raw_data_list,received_data):
         return self.GetCRC_16(received_raw_data_list) == received_data.get('check_sum')
-    
-    
+
+
     def GetCRC_16(self,raw_data_list):
         CRC16_INIT = 0xFFFF
         raw_data = b''.join(raw_data_list)
@@ -321,12 +305,12 @@ class Serial_Data_Read():
         for ch_data in raw_data[:-2]:
             wCRC = (wCRC>>8)^W_CRC_TABLE[(wCRC^ch_data)&0x00ff]
         return wCRC
-    
-    
+
+
     def AppendCRC(self):
         pass
-    
-    
+
+
     def PortIsOpen(self):
         return self.ser.isOpen()
 

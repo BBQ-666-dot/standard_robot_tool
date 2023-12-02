@@ -1,15 +1,13 @@
 import tkinter as tk
 import tkinter.ttk
 import tkinter.messagebox
-from PIL import Image, ImageTk
+from PIL import Image
 import serial.tools.list_ports
 import datetime as dt
-import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import sys
-from enum import Enum
 
 import SerialPortAssistant_lib as spl
 import Help_Windows as hw
@@ -35,7 +33,7 @@ MAX_DATA_STORAGE_LENGTH = 5000
 MIN_SAMPLES_NUMBER_DELTA = 10
 
 class Const():
-    READ_DATA_INTERVAL = 1 #(ms)
+    READ_DATA_INTERVAL = 50 #(ms)
     PLOT_TIME_INTERVAL = 100 #(ms)
     MAX_DATA_STORAGE_LENGTH = 5000 #(个)数据储存区的最大长度
     MIN_SAMPLES_NUMBER_DELTA = 100
@@ -51,6 +49,132 @@ def BlankFunction():
     print('BlankFunction')
 
 
+class ReceivedDataNameModel(tk.Frame):
+    '''接收数据名称列表'''
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.list_Checkbuttons = [] #存储Checkbutton的列表：[(Checkbutton, IntVar),...]，其中IntVar为Checkbutton的状态
+        self.name_list = [] #存储数据名称的列表
+        self.name_list_is_updated = False #数据名称列表是否更新
+
+    def AddWidget(self):
+        # 创建label提示内容
+        self.label = tk.Label(self, text="接收到的数据名称：")
+        self.label.pack(side="top", fill="x")
+        # 创建一个Canvas和一个Scrollbar
+        self.canvas = tk.Canvas(self)
+        self.scrollbar = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        # 更改canvas的大小
+        self.canvas.config(width=200, height=300)
+        # 创建一个Frame来包含所有的Checkbutton
+        self.frame = tk.Frame(self.canvas)
+        # 将Scrollbar放到Canvas的右边，填充Y方向
+        self.scrollbar.pack(side="right", fill="y")
+        # 将Canvas放到Scrollbar的左边，填充两个方向
+        self.canvas.pack(side="left", fill="both", expand=True)
+        # 将Frame放到Canvas中
+        self.canvas.create_window((0,0), window=self.frame, anchor='nw')
+        # 将Canvas的滚动事件与Scrollbar的set方法绑定
+        self.canvas.config(yscrollcommand=self.scrollbar.set)
+        # 当Frame的大小改变时，更新Canvas的滚动区域
+        self.frame.bind("<Configure>", lambda event: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+
+        # 绑定鼠标滚轮事件
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
+        # 添加Checkbutton
+        for i in range(20):
+            self.AddCheckbutton(f"checkbutton{i}")
+
+
+    def UpdateCheckbuttons(self):
+        for i,name in enumerate(self.name_list):
+            if i<self.list_Checkbuttons.__len__():
+                self.ChangeCheckbutton(name, i)
+            else:
+                self.AddCheckbutton(name)
+        for i in range(self.name_list.__len__(),self.list_Checkbuttons.__len__()):
+            self.RemoveCheckbutton(i)
+
+
+    def AddCheckbutton(self, text:str):
+        '''
+        添加Checkbutton
+        text:Checkbutton的文本
+        '''
+        var = tk.IntVar()
+        checkbutton = tk.Checkbutton(self.frame, text=text, variable=var)
+        self.list_Checkbuttons.append((checkbutton, var))
+        checkbutton.pack()
+
+
+    def ChangeCheckbutton(self, text:str, index:int):
+        '''
+        修改Checkbutton的文本
+        text:Checkbutton的文本
+        index:Checkbutton的索引
+        '''
+        checkbutton, var = self.list_Checkbuttons[index]
+        checkbutton.config(text=text)
+        var.set(0)
+
+
+    def RemoveCheckbutton(self, index:int):
+        '''
+        删除Checkbutton
+        index:Checkbutton的索引
+        '''
+        self.list_Checkbuttons[index][0].destroy()
+
+
+    def Clear(self):
+        '''
+        清空Checkbutton
+        '''
+        for item in self.list_Checkbuttons:
+            item[0].destroy()
+        self.list_Checkbuttons.clear()
+
+
+    def _on_mousewheel(self, event):
+        self.canvas.yview_scroll(-1*(event.delta//120), "units")
+
+
+    def UpdateNameListCallback(self, name_list:list):
+        self.name_list = name_list.copy()
+        self.name_list_is_updated = True
+        self.UpdateCheckbuttons()
+        log.LogInfo(log.Info_Index.Custom,f"数据名称:{self.name_list}")
+
+
+    def NotUpdateNameListCallback(self):
+        self.name_list_is_updated = False
+
+    # def __init__(self, master=None, **kwargs):
+    #     super().__init__(master, **kwargs)
+    #     self.is_updated = False
+
+    # def AddWidget(self):
+    #     # 创建一个Listbox和一个Scrollbar
+    #     self.listbox_DataName = tk.Listbox(self)
+    #     self.scrollbar = tk.Scrollbar(self)
+    #     # 将Scrollbar放到Listbox的右边，填充Y方向
+    #     self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    #     # 将Listbox放到Scrollbar的左边，填充两个方向
+    #     self.listbox_DataName.pack(side=tk.LEFT, fill=tk.BOTH)
+    #     # 将Scrollbar的滚动事件与Listbox的yview方法绑定
+    #     self.scrollbar.config(command=self.listbox_DataName.yview)
+    #     # 将Listbox的滚动事件与Scrollbar的set方法绑定
+    #     self.listbox_DataName.config(yscrollcommand=self.scrollbar.set)
+
+
+    # def UpdateDataList(self, data_name_list:list) -> None:
+    #     self.listbox_DataName.delete(0, tk.END)
+    #     for data_name in data_name_list:
+    #         self.listbox_DataName.insert(tk.END, data_name)
+
+    # def UpdateDataListCallback(self) -> None:
+    #     self.UpdateDataList(data_name_list)
 
 class WaveFormCanavas(FigureCanvasTkAgg):
     '''波形图画布'''
@@ -91,7 +215,6 @@ class PlotGraphModel(tk.Frame):
     def __init__(self, master=None, **kwargs) -> None:
         super().__init__(master, **kwargs)
         self.is_drawing = False
-        self.test = False
         
         self.fig_2d, self.ax_2d = plt.subplots(figsize=(10,6))#(15,7.5)
         self.plot_2d = spl.RealTimePlot_2D(self.ax_2d)
@@ -151,19 +274,6 @@ class PlotGraphModel(tk.Frame):
             self.master.after(Const.PLOT_TIME_INTERVAL, self.UpdateGraph)
         except:
             print(666)
-
-
-class ReceivedDataList(tk.Listbox):
-    '''接收数据列表'''
-    def __init__(self, master=None, **kwargs):
-        super().__init__(master, **kwargs)
-
-
-    def UpdateDataList(self,data_list:list) -> None:
-        self.delete(0, tk.END)#考虑到短时间内不会大量更新数据表并且数据量普遍较小，所以每次都清空再添加
-        for data_name in data_list:
-            self.insert(tk.END, data_name)
-
 
 
 class SerialPortModel(tk.Frame):
@@ -348,11 +458,7 @@ class SerialPortModel(tk.Frame):
                 log.LogError(log.Error_Index.PortOpenFailed)
         else:
             serial_port_is_not_open = self.serial_data_read_module.CloseSerialPort()
-            
-            # for data_dict in self.data_storage:
-            #     log.LogInfo(log.Info_Index.Custom,f"{data_dict}")
-                
-            if serial_port_is_not_open:
+            if serial_port_is_not_open: #串口关闭成功
                 log.LogInfo(log.Info_Index.PortIsClose)
                 self.port_is_open = False
                 self.is_receive_data = False
@@ -366,6 +472,8 @@ class SerialPortModel(tk.Frame):
                 self.UpdateSerialPortList()
                 #清除储存的数据
                 self.data_storage.clear()
+                #停止更新名称列表
+                self.CallNotUpdateNameList()
             else:
                 #在输出的信息框中显示错误信息
                 pass
@@ -398,6 +506,14 @@ class SerialPortModel(tk.Frame):
             log.LogWarning(log.Warning_Index.HaveNotReceiveAnyData)
             self.On_Off_Port_Click()
             return
+
+        if self.data_storage.__len__() == 1:#如果是第一次接收到数据，更新数据名称列表
+            name_list = list(self.data_storage[0].keys())
+            name_list.remove('time')
+            name_list.remove('header')
+            name_list.remove('length')
+            name_list.remove('check_sum')
+            self.CallUpdateNameList(name_list)
         log.LogInfo(log.Info_Index.Custom,f"已存储{self.data_storage.__len__()}个数据")
 
         data_send_state = self.serial_data_read_module.SendData()#发送数据，激活c板发回数据
@@ -414,6 +530,14 @@ class SerialPortModel(tk.Frame):
         self.master.after(Const.READ_DATA_INTERVAL, self.Receive_Data)  #调用自身，实现x毫秒的间隔
 
 
+    def CallUpdateNameList(self, name_list:list):
+        pass
+
+
+    def CallNotUpdateNameList(self):
+        pass
+
+
     def CallStartUpdatePlotGraph(self):
         pass
 
@@ -421,9 +545,7 @@ class SerialPortModel(tk.Frame):
     def CallStopUpdatePlotGraph(self):
         pass
 
-    def BlankFunction(self) -> None:
-        '''空函数，用于占位'''
-        pass
+
 
 
 class SendDataModel(tk.Frame):
@@ -686,12 +808,6 @@ class ReceivedDataModel(tk.Frame):
     def __init__(self, master=None, **kwargs) -> None:
         super().__init__(master, **kwargs)
         self.is_drawing = False
-        self.test = False
-
-
-    # def __call__(self, *args: Any, **kwds: Any) -> None:
-    #     # return super().__call__(*args, **kwds)
-    #     self.UpdateReceivedDataPreviewCallback()
 
 
     def AddWidget(self):
@@ -789,7 +905,6 @@ class ReceivedDataModel(tk.Frame):
         self.add_timestamp = self.Combobox_Add_Timestamp.current()
 
     def UpdateReceivedDataPreviewCallback(self) -> None:
-        print(self.test)
         pass
 
 
@@ -970,31 +1085,35 @@ class SerialPortAssistant():
                     )
         Frame_Plot.pack(side=tk.LEFT)
         #root/Frame_Plot
-        Frame_Plot_Param = tk.Frame(
-                        Frame_Plot,
-                        #relief='groove',bd=1
-                    )
-        Frame_Plot_Param.pack(side=tk.LEFT)
-        #root/Frame_Plot/Frame_Plot_Param
-        Label_Set_Output_Data_Label = tk.Label(
-                        Frame_Plot_Param,
-                        text='设置输出数据标签:',
-                        font=('黑体', 15),
-                        width=17,height=1,
-                        anchor='w'
-                    )
-        Label_Set_Output_Data_Label.pack(side=tk.TOP)
-        #root/Frame_Plot/Frame_Plot_Param
-        self.Combobox_Output_Data_Label = tkinter.ttk.Combobox(
-                        Frame_Plot_Param,
-                        width=12,
-                        font=('黑体', 15),
-                        values=['无数据'],
-                        postcommand=self.BlankFunction,
-                        state='readonly'
-                    )
-        self.Combobox_Output_Data_Label.pack(side=tk.TOP)
-        self.Combobox_Output_Data_Label.current(0)
+        # Frame_Plot_Param = tk.Frame(
+        #                 Frame_Plot,
+        #                 #relief='groove',bd=1
+        #             )
+        # Frame_Plot_Param.pack(side=tk.LEFT)
+        # #root/Frame_Plot/Frame_Plot_Param
+        # Label_Set_Output_Data_Label = tk.Label(
+        #                 Frame_Plot_Param,
+        #                 text='设置输出数据标签:',
+        #                 font=('黑体', 15),
+        #                 width=17,height=1,
+        #                 anchor='w'
+        #             )
+        # Label_Set_Output_Data_Label.pack(side=tk.TOP)
+        # #root/Frame_Plot/Frame_Plot_Param
+        # self.Combobox_Output_Data_Label = tkinter.ttk.Combobox(
+        #                 Frame_Plot_Param,
+        #                 width=12,
+        #                 font=('黑体', 15),
+        #                 values=['无数据'],
+        #                 postcommand=self.BlankFunction,
+        #                 state='readonly'
+        #             )
+        # self.Combobox_Output_Data_Label.pack(side=tk.TOP)
+        # self.Combobox_Output_Data_Label.current(0)
+        
+        self.received_data_name_moodel = ReceivedDataNameModel(Frame_Plot)
+        self.received_data_name_moodel.AddWidget()
+        self.received_data_name_moodel.pack(side=tk.LEFT)
         
         
         #图像绘制模块
@@ -1021,20 +1140,18 @@ class SerialPortAssistant():
         self.send_data_model.AddWidget()
         self.send_data_model.pack(side=tk.TOP)
         
-
+        
         #数据接收模块
         self.received_data_model = ReceivedDataModel(Frame_Right)
         self.received_data_model.AddWidget()
         self.received_data_model.pack(side=tk.TOP)
         
-        #test unit
-        self.received_data_model.test = True
-        self.plot_graph_model.test = True
-
 
         #将回调函数建立连接
         self.serial_port_model.CallStartUpdatePlotGraph = self.plot_graph_model.StartUpdatePlotGraphCallback
         self.serial_port_model.CallStopUpdatePlotGraph = self.plot_graph_model.StopUpdatePlotGraphCallback
+        self.serial_port_model.CallUpdateNameList = self.received_data_name_moodel.UpdateNameListCallback
+        self.serial_port_model.CallNotUpdateNameList = self.received_data_name_moodel.NotUpdateNameListCallback
 
         #相关变量建立连接
         self.plot_graph_model.data_storage = self.serial_port_model.data_storage
@@ -1238,6 +1355,6 @@ class SerialPortAssistant():
 
 spa = SerialPortAssistant()
 spa.InitUI()
-log.LogInfo(-1, '界面初始化完成')
-log.LogInfo(-1, '程序运行中...')
+log.LogInfo(log.Info_Index.Custom, '界面初始化完成')
+log.LogInfo(log.Info_Index.Custom, '程序运行中...')
 spa.RunApp()
