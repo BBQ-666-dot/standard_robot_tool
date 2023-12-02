@@ -7,8 +7,8 @@ import struct
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.axes as maxes
 # plt.rcParams['font.family'] = ['SimHei']  # replace with your installed Chinese font
-import datetime as dt
 import numpy as np
 import os
 import sys
@@ -98,114 +98,43 @@ def BinaryArrayToName(binary_array: bytes):
     
     
                     
-class RealTimePlot_2D:
-    def __init__(self, ax):
+class RealTimePlot_2D():
+    def __init__(self, ax:maxes.Axes):
         self.ax = ax
-        
-        self.ax._button_pressed = False
-        self.ax._button_press_event = None
-        self.ax._dragging = False
-        self.ax._drag_start = (0, 0)
-        self.ax._zoom_scale = 1.0
-        self.ax._move_position = (0, 0)
-        
-        self.mouse_prev_pos = None
-        self.ax_prev_lim = None
-        self.center_after_offset = (0, 0)
-        
-        self.x = []
-        self.y = []
         self.title = ''
         self.x_label = ''
         self.y_label = ''
-        
-    def update_plot(self):
+
+    # def PlotEmpty(self) -> None:
+    #     '''
+    #     绘制空函数:
+    #     '''
+    #     self.ax.cla()
+    #     self.ax.set_title(self.title, fontsize=15)  # 添加标题
+    #     self.ax.set_xlabel(self.x_label, fontsize=15)  # 添加X轴标签
+    #     self.ax.set_ylabel(self.y_label, fontsize=15)  # 添加Y轴标签
+    #     self.ax.legend(loc='upper right')  # 添加图例
+    #     self.ax.grid(True)  # 添加网格线
+
+
+    def UpdatePlot(self,x_axis_data:list,y_axis_data:list,y_labels:list) -> None:
+        '''
+        绘制图像函数:
+        x_axis_data: x轴数据
+        y_axis_data: y轴数据列表([y1,y2,y3,...]),包含多个曲线图y轴数据，每个y代表一个曲线图的y轴数据
+        y_labels: 每个曲线图的名称列表，数量和y_axis_data一致
+        '''
         self.ax.cla()
-        self.ax.plot(self.x, self.y)
+        for i,y in enumerate(y_axis_data):
+            self.ax.plot(x_axis_data, y, label=y_labels[i])
         
         self.ax.set_title(self.title, fontsize=15)  # 添加标题
         self.ax.set_xlabel(self.x_label, fontsize=15)  # 添加X轴标签
-        self.ax.set_ylabel(self.y_label, fontsize=15)  # 添加X轴标签
+        self.ax.set_ylabel(self.y_label, fontsize=15)  # 添加Y轴标签
+        self.ax.legend(loc='upper right')  # 添加图例
         self.ax.grid(True)  # 添加网格线
+        return None
 
-
-        return
-        xlim = self.ax.get_xlim()
-        ylim = self.ax.get_ylim()
-        if self.ax_prev_lim == None:
-            self.ax_prev_lim = (xlim, ylim)
-        x_center = 0.5 * (self.ax_prev_lim[0][0] + self.ax_prev_lim[0][1]) + self.ax._move_position[0]
-        y_center = 0.5 * (self.ax_prev_lim[1][0] + self.ax_prev_lim[1][1]) + self.ax._move_position[1]
-        x_width = xlim[1] - xlim[0]
-        y_width = ylim[1] - ylim[0]
-        new_x_width = x_width * self.ax._zoom_scale
-        new_y_width = y_width * self.ax._zoom_scale
-        self.ax.set_xlim(x_center - 0.5 * new_x_width, x_center + 0.5 * new_x_width)
-        self.ax.set_ylim(y_center - 0.5 * new_y_width, y_center + 0.5 * new_y_width)
-    
-    def on_button_press(self, event):
-        if event.button == 1:
-            self.ax._button_pressed = True
-            self.ax._button_press_event = event
-        elif event.button == 3:
-            self.ax._dragging = True
-            self.ax._drag_start = (event.x, event.y)
-        self.mouse_prev_pos = (event.x, event.y)
-    
-    def on_button_release(self, event):
-        if event.button == 1:
-            self.ax._button_pressed = False
-        elif event.button == 3:
-            self.ax._dragging = False
-        self.mouse_prev_pos = None
-        self.ax_prev_lim = None
-    
-    def on_mouse_move(self, event):
-        if self.ax._button_pressed:
-            if self.mouse_prev_pos is None:
-                self.mouse_prev_pos = (event.x, event.y)
-            dx = event.x - self.mouse_prev_pos[0]
-            dy = event.y - self.mouse_prev_pos[1]
-            self.mouse_prev_pos = (event.x, event.y)
-            dx /= 500
-            dy /= 5000
-
-            self.ax._move_position = (self.ax._move_position[0]+dx, self.ax._move_position[1]+dy)
-            xlim = self.ax.get_xlim()
-            ylim = self.ax.get_ylim()
-            # if self.ax_prev_lim == None:
-            self.ax_prev_lim = (xlim, ylim)
-            
-            x_center = 0.5 * (xlim[0] + xlim[1]) + self.ax._move_position[0]
-            y_center = 0.5 * (ylim[0] + ylim[1]) + self.ax._move_position[1]
-            x_width = xlim[1] - xlim[0]
-            y_width = ylim[1] - ylim[0]
-            new_x_width = x_width * self.ax._zoom_scale
-            new_y_width = y_width * self.ax._zoom_scale
-            self.ax.set_xlim(x_center - 0.5 * new_x_width, x_center + 0.5 * new_x_width)
-            self.ax.set_ylim(y_center - 0.5 * new_y_width, y_center + 0.5 * new_y_width)
-
-        # elif self.ax._dragging:
-        #     dx = event.x - self.ax._drag_start[0]
-        #     dy = event.y - self.ax._drag_start[1]
-        #     dx /= -1000
-        #     dy /= -1000
-        #     xlim = self.ax.get_xlim()
-        #     ylim = self.ax.get_ylim()
-        #     x_width = xlim[1] - xlim[0]
-        #     y_width = ylim[1] - ylim[0]
-        #     new_x_center = xlim[0] + x_width / 2 + dx
-        #     new_y_center = ylim[0] + y_width / 2 + dy
-        #     self.ax.set_xlim(new_x_center - x_width / 2, new_x_center + x_width / 2)
-        #     self.ax.set_ylim(new_y_center - y_width / 2, new_y_center + y_width / 2)
-            
-        plt.draw()
-    
-    def on_mouse_scroll(self, event):
-        if event.button == 'up':
-            self.ax._zoom_scale *= 0.9
-        elif event.button == 'down':
-            self.ax._zoom_scale *= 1.1
 
 
 class RealTimePlot_3D:
@@ -254,7 +183,7 @@ class RealTimePlot_3D:
             self.ax.azim -= dx * 0.3
         
         plt.draw()
-        
+
 
 class Serial_Data_Read():
     def __init__(self):
@@ -277,8 +206,8 @@ class Serial_Data_Read():
         self.send_header = 'A6'
         self.send_data_update = False
         self.send_raw_data = []
-    
-    
+
+
     def OpenSerialPort(self):
         if self.port_name != None:
             self.ser.port=self.port_name    #端口，用与电脑相匹配
@@ -286,27 +215,27 @@ class Serial_Data_Read():
             self.ser.bytesize=self.byte_size     #字节大小  8
             self.ser.open()
             if(self.ser.isOpen()):
-                print("串口打开成功！")
+                # print("串口打开成功！")
                 return True
             else:
-                print("串口打开失败！")
+                # print("串口打开失败！")
                 return False
         else:
-            print("无可用端口！")
+            # print("无可用端口！")
             return False
-        
-        
+
+
     def CloseSerialPort(self):
         self.ser.close()
         if(self.ser.isOpen()):
-            print("串口关闭失败！")
+            # print("串口关闭失败！")
             return False
         else:
-            print("串口关闭成功！")
+            # print("串口关闭成功！")
             return True
-            
-            
-    def ReadData(self):
+
+
+    def ReadData(self) -> int:
         try:
             self.ser.reset_input_buffer()# 清除接收数据的缓冲区
             
@@ -361,9 +290,9 @@ class Serial_Data_Read():
             return READ_HEADER_ERROR
         except:
             return READ_FAILED
-            
-            
-    
+
+
+
     def SendData(self):
         # 发送数据，数据格式为：起始符+数据+校验和
         try:
@@ -374,12 +303,12 @@ class Serial_Data_Read():
             return SEND_SUCCESSFULLY
         except:
             return SEND_FAILED
-    
-    
+
+
     def VarifyCRC(self,received_raw_data_list,received_data):
         return self.GetCRC_16(received_raw_data_list) == received_data.get('check_sum')
-    
-    
+
+
     def GetCRC_16(self,raw_data_list):
         CRC16_INIT = 0xFFFF
         raw_data = b''.join(raw_data_list)
@@ -387,12 +316,12 @@ class Serial_Data_Read():
         for ch_data in raw_data[:-2]:
             wCRC = (wCRC>>8)^W_CRC_TABLE[(wCRC^ch_data)&0x00ff]
         return wCRC
-    
-    
+
+
     def AppendCRC(self):
         pass
-    
-    
+
+
     def PortIsOpen(self):
         return self.ser.isOpen()
 
