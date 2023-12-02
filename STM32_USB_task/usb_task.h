@@ -18,6 +18,11 @@
 #define USB_TASK_H
 #include "struct_typedef.h"
 #include "stdbool.h"
+
+#define AUTO_AIM_STATE 0
+#define OUTPUT_PC_STATE 1
+#define USB_RECEIVE_LEN 384;//接收数据的长度48*8 bit
+
 typedef struct{
   uint8_t header;
   bool tracking : 1;
