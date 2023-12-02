@@ -12,6 +12,8 @@ class Info_Index(Enum):
     PortIsClose = 1
     PortIsReceivingData = 2
     PortIsNotReceivingData = 3
+    StartUpdatePlotGraph = 4
+    StopUpdatePlotGraph = 5
 
 class Warning_Index(Enum):
     Custom = -1
@@ -42,6 +44,10 @@ def LogInfo(info_index:Info_Index, string="") -> None:
         text = "串口正在接收数据"
     elif info_index == Info_Index.PortIsNotReceivingData:
         text = "串口停止接收数据"
+    elif info_index == Info_Index.StartUpdatePlotGraph:
+        text = "开始更新图像"
+    elif info_index == Info_Index.StopUpdatePlotGraph:
+        text = "停止更新图像"
     else:
         text = string
     print(f"\033[92mINFO:{text}\033[0m")

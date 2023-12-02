@@ -105,6 +105,17 @@ class RealTimePlot_2D():
         self.x_label = ''
         self.y_label = ''
 
+    # def PlotEmpty(self) -> None:
+    #     '''
+    #     绘制空函数:
+    #     '''
+    #     self.ax.cla()
+    #     self.ax.set_title(self.title, fontsize=15)  # 添加标题
+    #     self.ax.set_xlabel(self.x_label, fontsize=15)  # 添加X轴标签
+    #     self.ax.set_ylabel(self.y_label, fontsize=15)  # 添加Y轴标签
+    #     self.ax.legend(loc='upper right')  # 添加图例
+    #     self.ax.grid(True)  # 添加网格线
+
 
     def UpdatePlot(self,x_axis_data:list,y_axis_data:list,y_labels:list) -> None:
         '''
@@ -204,10 +215,10 @@ class Serial_Data_Read():
             self.ser.bytesize=self.byte_size     #字节大小  8
             self.ser.open()
             if(self.ser.isOpen()):
-                print("串口打开成功！")
+                # print("串口打开成功！")
                 return True
             else:
-                print("串口打开失败！")
+                # print("串口打开失败！")
                 return False
         else:
             # print("无可用端口！")

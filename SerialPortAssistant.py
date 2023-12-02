@@ -33,8 +33,8 @@ MAX_DATA_STORAGE_LENGTH = 5000
 MIN_SAMPLES_NUMBER_DELTA = 10
 
 class Const():
-    READ_DATA_INTERVAL = 50 #(ms)
-    PLOT_TIME_INTERVAL = 100 #(ms)
+    READ_DATA_INTERVAL = 1 #(ms)
+    PLOT_TIME_INTERVAL = 50 #(ms)
     MAX_DATA_STORAGE_LENGTH = 5000 #(个)数据储存区的最大长度
     MIN_SAMPLES_NUMBER_DELTA = 100
 
@@ -60,13 +60,13 @@ class ReceivedDataNameModel(tk.Frame):
 
     def AddWidget(self):
         # 创建label提示内容
-        self.label = tk.Label(self, text="接收到的数据名称：")
+        self.label = tk.Label(self, text="接收到的数据名称：", font=('黑体', 12))
         self.label.pack(side="top", fill="x")
         # 创建一个Canvas和一个Scrollbar
         self.canvas = tk.Canvas(self)
         self.scrollbar = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         # 更改canvas的大小
-        self.canvas.config(width=200, height=300)
+        self.canvas.config(width=120, height=100)
         # 创建一个Frame来包含所有的Checkbutton
         self.frame = tk.Frame(self.canvas)
         # 将Scrollbar放到Canvas的右边，填充Y方向
@@ -84,8 +84,8 @@ class ReceivedDataNameModel(tk.Frame):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
         # 添加Checkbutton
-        for i in range(20):
-            self.AddCheckbutton(f"checkbutton{i}")
+        # for i in range(20):
+        #     self.AddCheckbutton(f"checkbutton{i}")
 
 
     def UpdateCheckbuttons(self):
@@ -105,7 +105,7 @@ class ReceivedDataNameModel(tk.Frame):
         '''
         var = tk.IntVar()
         var.set(0)
-        checkbutton = tk.Checkbutton(self.frame, text=text, variable=var, command=lambda:self.SelectedNamesUpdate(text,var.get()))
+        checkbutton = tk.Checkbutton(self.frame, text=text, variable=var, font=('黑体', 12), command=lambda:self.SelectedNamesUpdate(text,var.get()))
         self.list_Checkbuttons.append((checkbutton, var))
         checkbutton.pack()
 
@@ -157,7 +157,6 @@ class ReceivedDataNameModel(tk.Frame):
             self.selected_names.append(name)
         elif not select and (name in self.selected_names):
             self.selected_names.remove(name)
-        log.LogInfo(log.Info_Index.Custom,f"被选中的数据名称:{self.selected_names}")
         self.CallUpdateNames(self.selected_names)
 
 
@@ -177,10 +176,10 @@ class ReceivedDataNameModel(tk.Frame):
         self.name_list = name_list.copy()
         self.name_list_is_updated = True
         self.UpdateCheckbuttons()
-        log.LogInfo(log.Info_Index.Custom,f"数据名称:{self.name_list}")
-        if self.selected_names.__len__() == 0:
+        if self.selected_names.__len__() == 0:#如果没有被选中的数据名称，则默认选中第一个数据名称
             self.list_Checkbuttons[0][0].invoke()
         self.CallStartUpdatePlotGraph(self.selected_names)
+        log.LogInfo(log.Info_Index.Custom,f"更新数据名称列表：{self.name_list}")
 
 
     def NotUpdateNameListCallback(self):
@@ -231,6 +230,7 @@ class PlotGraphModel(tk.Frame):
         self.plot_2d = spl.RealTimePlot_2D(self.ax_2d)
         self.plot_2d.x_label = 'time(s)'
         self.plot_2d.y_label = 'values'
+        self.plot_2d.title = 'Waveform'
         
         self.start_time:dt.datetime = dt.datetime.now()
         self.data_storage:list = []
@@ -255,9 +255,11 @@ class PlotGraphModel(tk.Frame):
         self.start_time = dt.datetime.now()
         self.names = names.copy()
         self.UpdateGraph()
+        log.LogInfo(log.Info_Index.StartUpdatePlotGraph)
 
 
     def StopUpdatePlotGraphCallback(self):
+        log.LogInfo(log.Info_Index.StopUpdatePlotGraph)
         self.is_drawing = False
 
 
@@ -275,19 +277,20 @@ class PlotGraphModel(tk.Frame):
         if self.is_drawing == False: #如果不接收数据，停止执行
             return
         
-        x = np.linspace(0, 2 * np.pi, 1000)
-        y0 = np.sin(x)+np.random.rand(1000)/10
-        
-        # TODO：将选择的图像数据显示在图像上
-        show_data_storage = self.SelectPlotData()
-        x = [(data_dict.get('time') - self.start_time).total_seconds() for data_dict in show_data_storage]
-        y_axis_data = []
-        for name in self.names:
-            y_axis_data.append([data_dict.get(name) for data_dict in show_data_storage])
-        
-        self.plot_2d.title = 'Waveform'
-        self.plot_2d.UpdatePlot(x,y_axis_data,self.names)
-        self.canvas.draw()
+        if self.names.__len__() == 0:#如果没有数据名称，绘制空图像
+            x=[]
+            y_axis_data=[[]]
+            self.plot_2d.UpdatePlot(x,y_axis_data,["empty"])
+            self.canvas.draw()
+        else:
+            show_data_storage = self.SelectPlotData()
+            x = [(data_dict.get('time') - self.start_time).total_seconds() for data_dict in show_data_storage]
+            y_axis_data = []
+            for name in self.names:
+                y_axis_data.append([data_dict.get(name) for data_dict in show_data_storage])
+            
+            self.plot_2d.UpdatePlot(x,y_axis_data,self.names)
+            self.canvas.draw()
         
         try:
             self.master.after(Const.PLOT_TIME_INTERVAL, self.UpdateGraph)
@@ -445,6 +448,7 @@ class SerialPortModel(tk.Frame):
         if self.Button_On_Off_Port['text'] == '打开端口':
             #传入参数
             self.data_storage.clear()
+            self.CallStopUpdatePlotGraph()#停止绘图
             if self.Combobox_Port.get() == '无可用端口':
                 self.serial_data_read_module.port_name = None
                 log.LogWarning(log.Warning_Index.DoNotFindPort)
@@ -546,7 +550,13 @@ class SerialPortModel(tk.Frame):
             data_dict['time'] = current_time
             self.data_storage.append(data_dict)#添加新数据
             self.MaintainDataStorageLength()
+            if self.serial_data_read_module.received_data_update:
+                self.CallUpdatePreviewReceivedData(data_dict)
         self.master.after(Const.READ_DATA_INTERVAL, self.Receive_Data)  #调用自身，实现x毫秒的间隔
+
+
+    def CallUpdatePreviewReceivedData(self):
+        pass
 
 
     def CallUpdateNameList(self, name_list:list):
@@ -555,10 +565,6 @@ class SerialPortModel(tk.Frame):
 
     def CallNotUpdateNameList(self):
         pass
-
-
-    # def CallStartUpdatePlotGraph(self):
-    #     pass
 
 
     def CallStopUpdatePlotGraph(self):
@@ -694,7 +700,7 @@ class SendDataModel(tk.Frame):
         
         self.Text_Preview_SendData = tk.Text(
                         Frame_Text_Preview_SendData,
-                        width=32,height=6,
+                        width=28,height=6,
                         font=('Arial', 12)
                     )
         self.Text_Preview_SendData.pack(side=tk.LEFT)
@@ -822,19 +828,15 @@ class SendDataModel(tk.Frame):
 
 
 
-class ReceivedDataModel(tk.Frame):
+class ReceivedDataPreviewModel(tk.Frame):
     '''已接收数据处理模块，处理已接收的数据'''
     def __init__(self, master=None, **kwargs) -> None:
         super().__init__(master, **kwargs)
-        self.is_drawing = False
-
+        self.show_state = DECODED_DATA
+        self.add_timestamp = ADD_TIMESTAMP
+        self.selected_names = []
 
     def AddWidget(self):
-        # Frame_Output_Data = tk.Frame(
-        #                 Frame_Right,
-        #                 #relief='groove',bd=1
-        #             )
-        # Frame_Output_Data.pack(side=tk.TOP)
         Frame_State_Choose = tk.Frame(
                         self,
                         #relief='groove',bd=1
@@ -903,7 +905,7 @@ class ReceivedDataModel(tk.Frame):
 
         self.Text_Output_Data = tk.Text(
                         Frame_Output_Text,
-                        width=32,height=8,
+                        width=28,height=8,
                         font=('Arial', 12)
                     )
         self.Text_Output_Data.pack(side=tk.LEFT)
@@ -923,9 +925,32 @@ class ReceivedDataModel(tk.Frame):
         '''选择是否添加时间戳'''
         self.add_timestamp = self.Combobox_Add_Timestamp.current()
 
-    def UpdateReceivedDataPreviewCallback(self) -> None:
-        pass
 
+    def UpdatePreviewReceivedDataCallback(self,received_data:dict) -> None:
+        self.PreviewReceivedData(received_data)
+
+
+    def PreviewReceivedData(self, received_data:dict) -> None:
+        #在文本框中输出数据
+        if self.show_state == DECODED_DATA:
+            #处理数据内容
+            show_data = []
+            
+            current_time = dt.datetime.now()
+            show_data.append(dt.datetime.strftime(current_time,'[%H:%M:%S.%f]'))
+            for data_label in received_data:
+                if data_label in ['header','length','check_sum'] or data_label not in self.selected_names:
+                    continue
+                show_data.append(data_label + '=' + str(received_data[data_label]))
+            self.Text_Output_Data.delete('1.0','end')
+            if self.add_timestamp == ADD_TIMESTAMP:
+                self.Text_Output_Data.insert('end','\n'.join(show_data)+'\n\n')#添加新的数据到输出框中
+            elif self.add_timestamp == NO_TIMESTAMP:
+                self.Text_Output_Data.insert('end','\n'.join(show_data[1:])+'\n\n')
+
+        else:
+            self.Text_Output_Data.delete('1.0','end') 
+            self.Text_Output_Data.insert('end','功能还未开发完全\n')
 
 
 
@@ -935,35 +960,6 @@ class ReceivedDataModel(tk.Frame):
 class SerialPortAssistant():
     """
 串口助手APP的主类\n
-函数包括：\n
-    空函数：\n
-        BlankFunction(): 空函数，用于占位\n
-    初始化内容：\n
-        __init__(): 初始化\n
-        InitMenu(): 初始化菜单栏\n
-        InitUI(): 初始化UI\n
-        InitFrame(): 初始化UI内部组件\n
-    监控数据变化：\n
-        MonitoringReceviedHeaderVariableChanges(): 监控接收数据帧头变量的变化\n
-        MonitoringSampleNumberVariableChanges(): 监控数据采样点个数变量的变化\n
-        MaintainDataStorageLength(): 维持数据储存区长度\n
-    更新内容：\n
-        UpdateGraph(): 更新图像\n
-        UpdateSerialPortList(): 更新串口列表\n
-    组件绑定的函数：\n
-        SaveInputWaveform_Click(): 保存输入波形的按钮函数\n
-        Entry_Samples_Number_OnMouseScroll(): 鼠标滚轮滚动时增减采样点个数\n
-        Button_Clear_Output_Text_Click(): 清空输出文本框\n
-        Combobox_Add_Timestamp_Selected(): 选择是否添加时间戳\n
-        Combobox_Show_State_Selected(): 选择显示状态\n
-        On_Off_Port(): 打开/关闭串口\n
-    功能实现函数：\n
-        Receive_Data(): 接收数据\n
-        TextToDict(): 将数据据结构的文本转换为字典类型\n
-        SaveWaveform(): 保存波形\n
-    运行相关：\n
-        RunApp(): 运行APP\n
-        Quit_App(): 退出APP\n
     """
     
     def __init__(self) -> None:
@@ -974,14 +970,8 @@ class SerialPortAssistant():
         self.version = 'V1.6.0'
         log.LogInfo(log.Info_Index.Custom, '版本已确认：' + self.version)
         self.available_ports = serial.tools.list_ports.comports()
-        self.show_state = DECODED_DATA
-        self.add_timestamp = ADD_TIMESTAMP
-        is_receive_data = False
-        data_storage = []
+
         self.show_image = SHOW_IMAGE
-        self.start_time = None
-        self.plot_time_interval = 30#(ms)图像更新间隔
-        self.read_data_interval = 1#(ms)数据读取间隔
         self.received_header = tk.StringVar()
         self.received_header.set('6A')
         self.received_header.trace('w', self.MonitoringReceviedHeaderVariableChanges)
@@ -993,18 +983,10 @@ class SerialPortAssistant():
         self.sample_number = tk.IntVar()
         self.sample_number.set(MAX_DATA_STORAGE_LENGTH)
         self.sample_number.trace('w', self.MonitoringSampleNumberVariableChanges)
-        port_is_open = False
         
         self.figure_state = 2#绘多少维的图
         self.fig_3d = plt.figure()
         self.ax_3d = self.fig_3d.add_subplot(111, projection='3d')
-
-        # self.fig_2d = plt.figure()
-        # self.ax_2d = self.fig_2d.add_subplot(111)
-
-        self.fig_2d, self.ax_2d = plt.subplots(figsize=(10,6))#(15,7.5)
-        self.plot_2d = spl.RealTimePlot_2D(self.ax_2d)
-        self.plot_2d.x_label = 'time(s)'
 
     
     def InitUI(self):
@@ -1096,39 +1078,11 @@ class SerialPortAssistant():
         
     def InitFrame(self):
         '''初始化内部组件'''
-        # TODO：添加显示所有接受到的数据名称的列表
-        #root
         Frame_Plot = tk.Frame(
                         self.root,
                         #relief='groove',bd=1
                     )
         Frame_Plot.pack(side=tk.LEFT)
-        #root/Frame_Plot
-        # Frame_Plot_Param = tk.Frame(
-        #                 Frame_Plot,
-        #                 #relief='groove',bd=1
-        #             )
-        # Frame_Plot_Param.pack(side=tk.LEFT)
-        # #root/Frame_Plot/Frame_Plot_Param
-        # Label_Set_Output_Data_Label = tk.Label(
-        #                 Frame_Plot_Param,
-        #                 text='设置输出数据标签:',
-        #                 font=('黑体', 15),
-        #                 width=17,height=1,
-        #                 anchor='w'
-        #             )
-        # Label_Set_Output_Data_Label.pack(side=tk.TOP)
-        # #root/Frame_Plot/Frame_Plot_Param
-        # self.Combobox_Output_Data_Label = tkinter.ttk.Combobox(
-        #                 Frame_Plot_Param,
-        #                 width=12,
-        #                 font=('黑体', 15),
-        #                 values=['无数据'],
-        #                 postcommand=self.BlankFunction,
-        #                 state='readonly'
-        #             )
-        # self.Combobox_Output_Data_Label.pack(side=tk.TOP)
-        # self.Combobox_Output_Data_Label.current(0)
         
         self.received_data_name_moodel = ReceivedDataNameModel(Frame_Plot)
         self.received_data_name_moodel.AddWidget()
@@ -1161,170 +1115,28 @@ class SerialPortAssistant():
         
         
         #数据接收模块
-        self.received_data_model = ReceivedDataModel(Frame_Right)
-        self.received_data_model.AddWidget()
-        self.received_data_model.pack(side=tk.TOP)
+        self.received_data_preview_model = ReceivedDataPreviewModel(Frame_Right)
+        self.received_data_preview_model.AddWidget()
+        self.received_data_preview_model.pack(side=tk.TOP)
         
 
         #将回调函数建立连接
-        # self.serial_port_model.CallStartUpdatePlotGraph = self.plot_graph_model.StartUpdatePlotGraphCallback
         self.received_data_name_moodel.CallStartUpdatePlotGraph = self.plot_graph_model.StartUpdatePlotGraphCallback
         self.received_data_name_moodel.CallUpdateNames = self.plot_graph_model.UpdateNamesCallback
         self.serial_port_model.CallStopUpdatePlotGraph = self.plot_graph_model.StopUpdatePlotGraphCallback
         self.serial_port_model.CallUpdateNameList = self.received_data_name_moodel.UpdateNameListCallback
         self.serial_port_model.CallNotUpdateNameList = self.received_data_name_moodel.NotUpdateNameListCallback
-
+        self.serial_port_model.CallUpdatePreviewReceivedData= self.received_data_preview_model.UpdatePreviewReceivedDataCallback
+        
         #相关变量建立连接
         self.plot_graph_model.data_storage = self.serial_port_model.data_storage
         self.plot_graph_model.sample_number_tkintvar = self.serial_port_model.sample_number
+        self.received_data_preview_model.selected_names = self.received_data_name_moodel.selected_names
 
 
-
-
-    # def Combobox_SendData_Type_Selected(self,event):
-    #     index = self.Combobox_SendData_Name.current()
-    #     data_type = spl.txt_to_type.get(self.Combobox_SendData_Type.get().lower())
-    #     # if type(self.send_data_list[index][2]) != self.send_data_list[index][1]:
-    #     data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
-    #     if data_type == spl.UINT32_T:
-    #         data = int(data)
-    #     self.send_data_list[index][1] = data_type
-    #     self.send_data_list[index][2] = data
-    #     self.send_data_data.set(str(self.send_data_list[index][2]))
-    #     self.UpdatePreviewSendData(updata_state=MODIFY_SENDDATA,delete_index=index)
-    #     print(self.Combobox_SendData_Name.current())
-    #     print(self.send_data_list)
-    
-    
-    # def Entry_SendData_Data_OnReturn(self,event):
-    #     index = self.Combobox_SendData_Name.current()
-    #     data_type = self.send_data_list[index][1]
-    #     data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
-    #     if data_type == spl.UINT32_T:
-    #         data = int(data)
-    #     self.send_data_list[index][2] = data
-    #     self.UpdatePreviewSendData(updata_state=MODIFY_SENDDATA,delete_index=index)
-    #     print(self.Combobox_SendData_Name.current())
-    #     print(self.send_data_list)
-
-    
-    # def Combobox_SendData_Name_OnCtrlDel(self,event):#用于删除发送数据
-    #     # print(self.Combobox_SendData_Name.current())
-    #     index = self.Combobox_SendData_Name.current()
-    #     self.send_data_list.pop(index)
-    #     if self.send_data_list.__len__() == 0:
-    #         self.Combobox_SendData_Name.configure(values=[])
-    #         self.Combobox_SendData_Name.set('')
-    #         self.Combobox_SendData_Type.configure(state='disabled')
-    #         self.Entry_SendData_Data.configure(state='disabled')
-    #     else:#如果数据列表不为空则跳转到第一个发送数据
-    #         self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
-    #         self.Combobox_SendData_Name.current(0)
-    #         self.Combobox_SendData_Type.current(self.send_data_list[0][1])
-    #         self.send_data_data.set(str(self.send_data_list[0][2]))
-    #     self.UpdatePreviewSendData(updata_state=DELETE_SENDDATA, delete_index=index)
-    #     print(self.Combobox_SendData_Name.current())
-    #     print(self.send_data_list)
-    
-        
-    # def Combobox_SendData_Name_OnKeyRelease(self,event):#用于输入内容及检测是否添加数据
-    #     if event.keysym == "Return":
-    #         # print('press Return')
-    #         if self.Combobox_SendData_Name.get() == '':
-    #             tkinter.messagebox.showwarning(title='提示', message='数据名称不能为空！')
-    #             # else:#如果数据名称为空则删除对应的发送数据
-    #             #     index = self.Combobox_SendData_Name.current()
-    #             #     self.send_data_list.pop(index)
-    #             #     self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
-    #             #     if self.send_data_list.__len__() == 0:
-    #             #         self.Combobox_SendData_Type.configure(state='disabled')
-    #             #         self.Entry_SendData_Data.configure(state='disabled')
-    #             #     else:#如果数据列表不为空则跳转到第一个发送数据
-    #             #         self.Combobox_SendData_Name.current(0)
-    #             #         self.Combobox_SendData_Type.current(self.send_data_list[0][1])
-    #             #         self.send_data_data.set(str(self.send_data_list[0][2]))
-    #         else:
-    #             if self.Combobox_SendData_Name.current() == -1:#发送数据名称不存在则添加新的发送数据
-    #                 self.Combobox_SendData_Type.configure(state='normal')
-    #                 self.Entry_SendData_Data.configure(state='normal')
-    #                 self.Combobox_SendData_Type.current(0)
-    #                 self.send_data_data.set('0')
-                    
-    #                 data_name = self.Combobox_SendData_Name.get()
-    #                 data_type = spl.txt_to_type.get(self.Combobox_SendData_Type.get().lower())
-    #                 data = float(self.send_data_data.get())#先将数据转换成float，如果选择类型为int，再转换成int
-    #                 if data_type == spl.UINT32_T:
-    #                     data = int(data)
-                        
-    #                 self.send_data_list.append([data_name, data_type, data])
-                    
-    #                 self.Combobox_SendData_Name.configure(values=list(zip(*self.send_data_list))[0])
-    #                 self.UpdatePreviewSendData(updata_state=ADD_SENDDATA)
-    #             else:#如果数据名称存在则跳转到对应的发送数据
-    #                 name_index = self.Combobox_SendData_Name.current()
-    #                 self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
-    #                 self.send_data_data.set(str(self.send_data_list[name_index][2]))
-                    
-    #         print(self.Combobox_SendData_Name.current())
-    #         print(self.send_data_list)
-    #     else:
-    #     # elif '0' < event.keysym < '9' or 'A' < event.keysym < 'z' or event.keysym == "BackSpace" or event.keysym == "Delete":
-    #         if self.Combobox_SendData_Name.current() != -1:#如果数据名称存在则跳转到对应的发送数据
-    #             name_index = self.Combobox_SendData_Name.current()
-    #             self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
-    #             self.send_data_data.set(str(self.send_data_list[name_index][2]))
-
-    
-    # def Combobox_SendData_Name_Selected(self,event):
-    #     name_index = self.Combobox_SendData_Name.current()
-    #     self.Combobox_SendData_Type.current(self.send_data_list[name_index][1])
-    #     self.send_data_data.set(str(self.send_data_list[name_index][2]))
-    
-
-    # def UpdatePreviewSendData(self, updata_state, delete_index=0):
-    #     '''
-    #     ### 更新预览发送数据\n
-    #     预览的发送数据格式如下：\n
-    #     'name[type] = data'
-    #     '''
-    #     row_offset = 2
-    #     self.Text_Preview_SendData.delete("1.7", "2.0-1c")
-    #     self.Text_Preview_SendData.insert("1.7",str(self.send_data_list.__len__()))
-    #     if updata_state == ADD_SENDDATA:
-    #         data_name = self.send_data_list[-1][0]
-    #         data_type = self.send_data_list[-1][1]
-    #         data = self.send_data_list[-1][2]
-    #         self.Text_Preview_SendData.insert(tk.END,f"{data_name}[{spl.type_to_txt[data_type]}] = {data}\n")
-    #     elif updata_state == DELETE_SENDDATA:
-    #         self.Text_Preview_SendData.delete(f"{delete_index + row_offset + 1}.0", f"{delete_index + row_offset + 2}.0")
-    #     elif updata_state == MODIFY_SENDDATA:
-    #         data_name = self.send_data_list[delete_index][0]
-    #         data_type = self.send_data_list[delete_index][1]
-    #         data = self.send_data_list[delete_index][2]
-    #         self.Text_Preview_SendData.delete(f"{delete_index + row_offset + 1}.0", f"{delete_index + row_offset + 2}.0")
-    #         self.Text_Preview_SendData.insert(f"{delete_index + row_offset + 1}.0",f"{data_name}[{spl.type_to_txt[data_type]}] = {data}\n")
-                
-    
     def Entry_Samples_Number_OnMouseScroll(self,event):
         '''鼠标滚轮滚动时增减采样点个数'''
         self.sample_number.set(self.sample_number.get()+event.delta//120*MIN_SAMPLES_NUMBER_DELTA)
-        # if self.sample_number.get() < MIN_SAMPLES_NUMBER_DELTA:
-        #     self.sample_number.set(MIN_SAMPLES_NUMBER_DELTA)
-    
-    # def Button_Clear_Output_Text_Click(self):
-    #     '''清空输出文本框'''
-    #     self.Text_Output_Data.delete('1.0','end') 
-        
-        
-    # def Combobox_Add_Timestamp_Selected(self, event):
-    #     '''选择是否添加时间戳'''
-    #     self.add_timestamp = self.Combobox_Add_Timestamp.current()
-    
-    
-    # def Combobox_Show_State_Selected(self, event):
-    #     '''选择输出文本的设置'''
-    #     self.show_state = self.Combobox_Show_State.current()
-        
 
 
     def TextToDict(self, struct_text:str):
@@ -1346,27 +1158,16 @@ class SerialPortAssistant():
         return data_struct_dict
 
 
-    def UpdateDataLabels(self):
-        labels = list(data_storage[0].keys())
-        labels.remove('time')
-        labels.remove('header')
-        labels.remove('length')
-        labels.remove('check_sum')
-        self.Combobox_Output_Data_Label.configure(values=labels)
-        if self.Combobox_Output_Data_Label.get() not in labels:
-            self.Combobox_Output_Data_Label.current(0)
-        
-        
     def RunApp(self):
         '''运行程序'''
         self.root.mainloop()
-        
-        
+
+
     def Quit_App(self):
         '''弹出一个弹窗，询问是否退出，如果是则退出，否则不退出'''
         quit_app = tkinter.messagebox.askyesno(title='提示', message='是否退出？')
         if quit_app:#退出程序
-            if port_is_open:
+            if self.serial_port_model.port_is_open:
                 self.serial_data_read_module.CloseSerialPort()
             sys.exit(0)
         
