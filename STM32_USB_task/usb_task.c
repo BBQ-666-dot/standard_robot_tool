@@ -130,18 +130,6 @@ void usb_task(void const *argument)
                 OutputData.header = 0x6A;
                 OutputData.length = sizeof(OutputData_s);
 
-                char_to_uint(OutputData.name_1, "det_col");
-                OutputData.type_1 = 0;
-                OutputData.data_1 = (uint32_t)SendData.detect_color;
-
-                char_to_uint(OutputData.name_2, "rset_tra");
-                OutputData.type_2 = 0;
-                OutputData.data_2 = (uint32_t)SendData.reset_tracker;
-
-                char_to_uint(OutputData.name_3, "reserved");
-                OutputData.type_3 = 0;
-                OutputData.data_3 = (uint32_t)SendData.reserved;
-
                 char_to_uint(OutputData.name_5, "roll");
                 OutputData.type_5 = 1;
                 OutputData.data_5 = gimbal_INT_gyro_angle_point[2];
@@ -153,18 +141,6 @@ void usb_task(void const *argument)
                 char_to_uint(OutputData.name_7, "yaw");
                 OutputData.type_7 = 1;
                 OutputData.data_7 = gimbal_INT_gyro_angle_point[0];
-
-                char_to_uint(OutputData.name_8, "aim_x");
-                OutputData.type_8 = 1;
-                OutputData.data_8 = SendData.aim_x;
-
-                char_to_uint(OutputData.name_9, "aim_y");
-                OutputData.type_9 = 1;
-                OutputData.data_9 = SendData.aim_y;
-
-                char_to_uint(OutputData.name_10, "aim_z");
-                OutputData.type_10 = 1;
-                OutputData.data_10 = SendData.aim_z;
 
                 usb_send_outputPC();
             }

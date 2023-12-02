@@ -967,7 +967,7 @@ class SerialPortAssistant():
         self.root = tk.Tk()
         log.LogInfo(log.Info_Index.Custom, '窗口已创建')
         self.serial_data_read_module = spl.Serial_Data_Read()
-        self.version = 'V1.6.0'
+        self.version = 'V2.0.0'
         log.LogInfo(log.Info_Index.Custom, '版本已确认：' + self.version)
         self.available_ports = serial.tools.list_ports.comports()
 
