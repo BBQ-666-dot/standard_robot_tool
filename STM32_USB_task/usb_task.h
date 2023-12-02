@@ -1,18 +1,20 @@
 /**
-  ****************************(C) COPYRIGHT 2019 DJI****************************
+  ****************************(C) COPYRIGHT 2023 Polarbear*************************
   * @file       usb_task.c/h
-  * @brief      no action.
+  * @brief      usb outputs the IMU and gimbal data to the miniPC
   * @note       
   * @history
   *  Version    Date            Author          Modification
-  *  V1.0.0     Dec-26-2018     RM              1. done
+  *  V1.0.0     2023-7-11       Penguin         1. done
+  *  V1.0.1     Oct-31-2023     LihanChen       1. Finish building the core framework to make it compatible with both debugging mode and MiniPC mode.
+  *  V1.0.2     Nov-1-2023      LihanChen       1. Merge Append_CRC16_Check_Sum_SendData() and Append_CRC16_Check_Sum_OutputData() into Append_CRC16_Check_Sum()
   *
   @verbatim
-  ==============================================================================
+  =================================================================================
 
-  ==============================================================================
+  =================================================================================
   @endverbatim
-  ****************************(C) COPYRIGHT 2019 DJI****************************
+  ****************************(C) COPYRIGHT 2023 Polarbear*************************
   */
 #ifndef USB_TASK_H
 #define USB_TASK_H
