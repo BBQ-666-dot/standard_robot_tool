@@ -489,8 +489,8 @@ class SerialPortModel(tk.Frame):
                 # self.Text_SendData_Structure.configure(state='normal')
                 #更新串口列表
                 self.UpdateSerialPortList()
-                #清除储存的数据
-                self.data_storage.clear()
+                # #清除储存的数据
+                # self.data_storage.clear()
                 #停止更新名称列表
                 self.CallNotUpdateNameList()
             else:
@@ -510,9 +510,9 @@ class SerialPortModel(tk.Frame):
 
     def Receive_Data(self) -> None:
         '''接收数据'''
-        if self.is_receive_data == False:#如果不接收数据，停止执行，同时停止绘图
+        if self.is_receive_data == False:#如果不接收数据，停止执行
             log.LogInfo(log.Info_Index.PortIsNotReceivingData)
-            self.CallStopUpdatePlotGraph()#停止绘图
+            # self.CallStopUpdatePlotGraph()#停止绘图
             return
         #如果超过1000ms秒没有接收到数据，关闭串口
         MAX_STOP_TIME = 1000 #(ms)
@@ -969,10 +969,10 @@ class SerialPortAssistant():
     def __init__(self) -> None:
         '''初始化'''
         self.root = tk.Tk()
-        log.LogInfo(-1, '窗口已创建')
+        log.LogInfo(log.Info_Index.Custom, '窗口已创建')
         self.serial_data_read_module = spl.Serial_Data_Read()
         self.version = 'V1.6.0'
-        log.LogInfo(-1, '版本已确认：' + self.version)
+        log.LogInfo(log.Info_Index.Custom, '版本已确认：' + self.version)
         self.available_ports = serial.tools.list_ports.comports()
         self.show_state = DECODED_DATA
         self.add_timestamp = ADD_TIMESTAMP
