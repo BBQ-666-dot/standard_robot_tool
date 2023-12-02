@@ -158,10 +158,19 @@ class ReceivedDataNameModel(tk.Frame):
         elif not select and (name in self.selected_names):
             self.selected_names.remove(name)
         log.LogInfo(log.Info_Index.Custom,f"被选中的数据名称:{self.selected_names}")
+        self.CallUpdateNames(self.selected_names)
 
 
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(-1*(event.delta//120), "units")
+
+
+    def CallStartUpdatePlotGraph(self, names:list):
+        pass
+
+
+    def CallUpdateNames(self, name_list:list):
+        pass
 
 
     def UpdateNameListCallback(self, name_list:list):
@@ -169,6 +178,9 @@ class ReceivedDataNameModel(tk.Frame):
         self.name_list_is_updated = True
         self.UpdateCheckbuttons()
         log.LogInfo(log.Info_Index.Custom,f"数据名称:{self.name_list}")
+        if self.selected_names.__len__() == 0:
+            self.list_Checkbuttons[0][0].invoke()
+        self.CallStartUpdatePlotGraph(self.selected_names)
 
 
     def NotUpdateNameListCallback(self):
@@ -223,6 +235,7 @@ class PlotGraphModel(tk.Frame):
         self.start_time:dt.datetime = dt.datetime.now()
         self.data_storage:list = []
         self.sample_number_tkintvar:tk.IntVar = None
+        self.names = [] #数据名称列表
 
     def AddWidget(self):
         self.canvas = FigureCanvasTkAgg(
@@ -231,11 +244,16 @@ class PlotGraphModel(tk.Frame):
                     )
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         self.UpdateGraph()
-    
-    
-    def StartUpdatePlotGraphCallback(self):
+
+
+    def UpdateNamesCallback(self, names:list):
+        self.names = names.copy()
+
+
+    def StartUpdatePlotGraphCallback(self, names:list):
         self.is_drawing = True
         self.start_time = dt.datetime.now()
+        self.names = names.copy()
         self.UpdateGraph()
 
 
@@ -263,10 +281,12 @@ class PlotGraphModel(tk.Frame):
         # TODO：将选择的图像数据显示在图像上
         show_data_storage = self.SelectPlotData()
         x = [(data_dict.get('time') - self.start_time).total_seconds() for data_dict in show_data_storage]
-        y = [data_dict.get("Pitch") for data_dict in show_data_storage]
+        y_axis_data = []
+        for name in self.names:
+            y_axis_data.append([data_dict.get(name) for data_dict in show_data_storage])
         
         self.plot_2d.title = 'Waveform'
-        self.plot_2d.UpdatePlot(x,[y,y0[-y.__len__():]],["Pitch","sin"])
+        self.plot_2d.UpdatePlot(x,y_axis_data,self.names)
         self.canvas.draw()
         
         try:
@@ -450,7 +470,7 @@ class SerialPortModel(tk.Frame):
                 self.is_receive_data = True #设置当前状态为接收数据
                 self.Receive_Data() #开始接收数据
                 log.LogInfo(log.Info_Index.PortIsReceivingData)
-                self.CallStartUpdatePlotGraph() #开始更新显示图像
+                # self.CallStartUpdatePlotGraph() #开始更新显示图像
 
             else:
                 #在输出的信息框中显示错误信息
@@ -537,8 +557,8 @@ class SerialPortModel(tk.Frame):
         pass
 
 
-    def CallStartUpdatePlotGraph(self):
-        pass
+    # def CallStartUpdatePlotGraph(self):
+    #     pass
 
 
     def CallStopUpdatePlotGraph(self):
@@ -1147,7 +1167,9 @@ class SerialPortAssistant():
         
 
         #将回调函数建立连接
-        self.serial_port_model.CallStartUpdatePlotGraph = self.plot_graph_model.StartUpdatePlotGraphCallback
+        # self.serial_port_model.CallStartUpdatePlotGraph = self.plot_graph_model.StartUpdatePlotGraphCallback
+        self.received_data_name_moodel.CallStartUpdatePlotGraph = self.plot_graph_model.StartUpdatePlotGraphCallback
+        self.received_data_name_moodel.CallUpdateNames = self.plot_graph_model.UpdateNamesCallback
         self.serial_port_model.CallStopUpdatePlotGraph = self.plot_graph_model.StopUpdatePlotGraphCallback
         self.serial_port_model.CallUpdateNameList = self.received_data_name_moodel.UpdateNameListCallback
         self.serial_port_model.CallNotUpdateNameList = self.received_data_name_moodel.NotUpdateNameListCallback

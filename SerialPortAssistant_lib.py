@@ -109,7 +109,7 @@ class RealTimePlot_2D():
     def UpdatePlot(self,x_axis_data:list,y_axis_data:list,y_labels:list) -> None:
         '''
         绘制图像函数:
-        y_axis_data: x轴数据
+        x_axis_data: x轴数据
         y_axis_data: y轴数据列表([y1,y2,y3,...]),包含多个曲线图y轴数据，每个y代表一个曲线图的y轴数据
         y_labels: 每个曲线图的名称列表，数量和y_axis_data一致
         '''
