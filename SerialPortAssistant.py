@@ -55,6 +55,7 @@ class ReceivedDataNameModel(tk.Frame):
         super().__init__(master, **kwargs)
         self.list_Checkbuttons = [] #存储Checkbutton的列表：[(Checkbutton, IntVar),...]，其中IntVar为Checkbutton的状态
         self.name_list = [] #存储数据名称的列表
+        self.selected_names = [] #存储被选中的数据名称
         self.name_list_is_updated = False #数据名称列表是否更新
 
     def AddWidget(self):
@@ -103,7 +104,8 @@ class ReceivedDataNameModel(tk.Frame):
         text:Checkbutton的文本
         '''
         var = tk.IntVar()
-        checkbutton = tk.Checkbutton(self.frame, text=text, variable=var)
+        var.set(0)
+        checkbutton = tk.Checkbutton(self.frame, text=text, variable=var, command=lambda:self.SelectedNamesUpdate(text,var.get()))
         self.list_Checkbuttons.append((checkbutton, var))
         checkbutton.pack()
 
@@ -115,8 +117,14 @@ class ReceivedDataNameModel(tk.Frame):
         index:Checkbutton的索引
         '''
         checkbutton, var = self.list_Checkbuttons[index]
-        checkbutton.config(text=text)
+        original_text = checkbutton.cget('text')
+        if original_text == text:
+            return
+        if var.get():
+            self.selected_names.remove(original_text)
         var.set(0)
+        checkbutton.config(text=text)
+        checkbutton.config(command=lambda:self.SelectedNamesUpdate(text,var.get()))
 
 
     def RemoveCheckbutton(self, index:int):
@@ -124,6 +132,9 @@ class ReceivedDataNameModel(tk.Frame):
         删除Checkbutton
         index:Checkbutton的索引
         '''
+        checkbutton, var = self.list_Checkbuttons[index]
+        if var.get():
+            self.selected_names.remove(checkbutton.cget('text'))
         self.list_Checkbuttons[index][0].destroy()
 
 
@@ -134,6 +145,19 @@ class ReceivedDataNameModel(tk.Frame):
         for item in self.list_Checkbuttons:
             item[0].destroy()
         self.list_Checkbuttons.clear()
+        self.name_list.clear()
+
+
+    def SelectedNamesUpdate(self,name:str,select:int):
+        '''
+        更新被选中的数据名称
+        name:数据名称
+        '''
+        if select and (name not in self.selected_names):
+            self.selected_names.append(name)
+        elif not select and (name in self.selected_names):
+            self.selected_names.remove(name)
+        log.LogInfo(log.Info_Index.Custom,f"被选中的数据名称:{self.selected_names}")
 
 
     def _on_mousewheel(self, event):
@@ -150,31 +174,6 @@ class ReceivedDataNameModel(tk.Frame):
     def NotUpdateNameListCallback(self):
         self.name_list_is_updated = False
 
-    # def __init__(self, master=None, **kwargs):
-    #     super().__init__(master, **kwargs)
-    #     self.is_updated = False
-
-    # def AddWidget(self):
-    #     # 创建一个Listbox和一个Scrollbar
-    #     self.listbox_DataName = tk.Listbox(self)
-    #     self.scrollbar = tk.Scrollbar(self)
-    #     # 将Scrollbar放到Listbox的右边，填充Y方向
-    #     self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    #     # 将Listbox放到Scrollbar的左边，填充两个方向
-    #     self.listbox_DataName.pack(side=tk.LEFT, fill=tk.BOTH)
-    #     # 将Scrollbar的滚动事件与Listbox的yview方法绑定
-    #     self.scrollbar.config(command=self.listbox_DataName.yview)
-    #     # 将Listbox的滚动事件与Scrollbar的set方法绑定
-    #     self.listbox_DataName.config(yscrollcommand=self.scrollbar.set)
-
-
-    # def UpdateDataList(self, data_name_list:list) -> None:
-    #     self.listbox_DataName.delete(0, tk.END)
-    #     for data_name in data_name_list:
-    #         self.listbox_DataName.insert(tk.END, data_name)
-
-    # def UpdateDataListCallback(self) -> None:
-    #     self.UpdateDataList(data_name_list)
 
 class WaveFormCanavas(FigureCanvasTkAgg):
     '''波形图画布'''
@@ -514,7 +513,7 @@ class SerialPortModel(tk.Frame):
             name_list.remove('length')
             name_list.remove('check_sum')
             self.CallUpdateNameList(name_list)
-        log.LogInfo(log.Info_Index.Custom,f"已存储{self.data_storage.__len__()}个数据")
+        # log.LogInfo(log.Info_Index.Custom,f"已存储{self.data_storage.__len__()}个数据")
 
         data_send_state = self.serial_data_read_module.SendData()#发送数据，激活c板发回数据
         data_read_state = self.serial_data_read_module.ReadData()#读取数据
