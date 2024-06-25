@@ -14,6 +14,9 @@ from lib.log_info import LogError , LogInfo , LogWarning
 from lib.usb_divice import USB_Device
 import threading
 import time
+from OperationTypedef import OPEN_USB,CLOSE_USB
+
+usb_operations = [OPEN_USB,CLOSE_USB]
 
 def TASK_UsbDevice(usb:USB_Device, oprations:list):
     '''
@@ -25,12 +28,21 @@ def TASK_UsbDevice(usb:USB_Device, oprations:list):
     usb.get()
     
     while True:
+        #处理操作
+        if len(oprations)>0 and oprations[0] in usb_operations:
+            if oprations[0] == OPEN_USB:
+                usb.open()
+            elif oprations[0] == CLOSE_USB:
+                usb.close()
+            oprations.pop(0)
+        
         if usb.is_open:
-            usb.read_data
+            data=usb.read(30)
+            print(data)
         else:
             pass
-        print(usb.baudrate)
-        print(oprations)
+        
+        # 任务延时
         # time.sleep(0.001) # Sleep for 1ms
         time.sleep(0.1)
 
@@ -44,10 +56,6 @@ if __name__ == '__main__':
     usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb,oprations))
     usb_divice_task_thread.start()
     
-    time.sleep(1)
     usb.modify("COM11",200,8,1,"N")
-    oprations.append("modify")
-    time.sleep(1)
-    usb.modify("COM11",15245,8,1,"N")
-    oprations.append("modify")
+    oprations.append(OPEN_USB)
 
