@@ -20,6 +20,8 @@ class USB_Device:
 #  close
 #  get
 #  modify
+#  buf_is_empty
+#  clear_rx_buf
 ############################################################
     
     def open(self) -> bool:
@@ -78,7 +80,16 @@ class USB_Device:
         self.parity=parity     #校验位 N－无校验，E－偶校验，O－奇校验
         LogInfo("USB设备信息已更新！")
         return True
-        
+    
+    def buf_is_empty(self) -> bool:
+        if self.ser.in_waiting == 0:
+            return True
+        else:
+            return False
+    
+    def clear_rx_buf(self):
+        self.ser.reset_input_buffer()
+        LogInfo("接收缓存区已清空！")
         
 
 ############################################################
@@ -93,40 +104,51 @@ class USB_Device:
 
 if __name__ == '__main__':
     import struct
+    import time
     
     usb = USB_Device()
     usb.get()
     usb.modify(port = "COM11")
     usb.open()
-    
-    received_data = b''
-    data = b''
-    #读取帧头的第一个字节
-    while data != b'\x5a':
-        data = usb.read(1)
-        print('data=',data)
+    for _ in range(10):
+        received_data = b''
+        data = b''
+        #读取帧头的第一个字节
+        while data != b'\x5a':
+            data = usb.read(1)
+            print('data=',data)
+            received_data += data
+        #读取帧头剩余的3个字节
+        data = usb.read(3)
         received_data += data
-    #读取帧头剩余的3个字节
-    data = usb.read(3)
-    received_data += data
-    print('received=',received_data)
-    crc8 = crc.GetCRC8(received_data[:-1])
-    print('crc8_calc=',crc8)
-    print('crc8_recv=',list(received_data)[-1])
-    print('crc8_ok=',crc.VerifyCRC8(received_data))
-    
-    data_len = int(received_data[1])
-    data_id = int(received_data[2])
-    LogInfo("接收到数据,数据长度为%d,数据ID为%d"%(data_len,data_id))
-    data = usb.read(data_len+2)
-    received_data += data
-    crc16 = crc.GetCRC16(received_data[:-2])
-    print('received=',received_data)
-    print('crc16_calc=',crc16)
-    uint16_int = struct.unpack('<H', received_data[-2:])[0]  # '<H'表示小端模式的无符号短整型
-    print('crc16_recv=', uint16_int)
-    print('crc16_ok=',crc.VerifyCRC16(received_data))
-    
+        print('received=',received_data)
+        crc8 = crc.GetCRC8(received_data[:-1])
+        print('crc8_calc=',crc8)
+        print('crc8_recv=',list(received_data)[-1])
+        print('crc8_ok=',crc.VerifyCRC8(received_data))
+        
+        data_len = int(received_data[1])
+        data_id = int(received_data[2])
+        LogInfo("接收到数据,数据长度为%d,数据ID为%d"%(data_len,data_id))
+        data = usb.read(data_len+2)
+        received_data += data
+        crc16 = crc.GetCRC16(received_data[:-2])
+        print('received=',received_data)
+        print('crc16_calc=',crc16)
+        uint16_int = struct.unpack('<H', received_data[-2:])[0]  # '<H'表示小端模式的无符号短整型
+        print('crc16_recv=', uint16_int)
+        print('crc16_ok=',crc.VerifyCRC16(received_data))
+        if usb.ser.in_waiting == 0:
+            print("接收缓存区为空")
+        else:
+            print("接收缓存区不为空")
+        usb.clear_rx_buf()
+        if usb.ser.in_waiting == 0:
+            print("接收缓存区为空")
+        else:
+            print("接收缓存区不为空")
+        
+        time.sleep(1)
     
     usb.close()
     
