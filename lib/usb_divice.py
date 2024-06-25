@@ -8,63 +8,85 @@ class USB_Device:
         self.ser = serial.Serial()
         self.is_open = False
         
+        self.port     = None #端口
+        self.baudrate = 9600 #波特率    9600
+        self.bytesize = 8    #字节大小  8
+        self.stopbits = 1    #停止位    1
+        self.parity   = "N"  #校验位 N－无校验，E－偶校验，O－奇校验
+        
 ############################################################
 #  串口基本功能
-#  OpenPort
-#  ClosePort
-#  GetPort
+#  open
+#  close
+#  get
+#  modify
 ############################################################
     
-    def OpenPort(self, port:str, baudrate:int=9600, bytesize:int=8, stopbits:int=1, parity:str="N") -> bool:
+    def open(self) -> bool:
         if(self.ser.isOpen()):
-            LogWarning("串口已经打开！")
-            LogError("串口打开失败！")
+            LogWarning("USB已经打开！")
+            LogError("USB打开失败！")
             return False
 
-        self.ser.port=port         #端口
-        self.ser.baudrate=baudrate #波特率    9600
-        self.ser.bytesize=bytesize #字节大小  8
-        self.ser.stopbits=stopbits #停止位    1
-        self.ser.parity=parity     #校验位 N－无校验，E－偶校验，O－奇校验
+        self.ser.port=self.port         #端口
+        self.ser.baudrate=self.baudrate #波特率    9600
+        self.ser.bytesize=self.bytesize #字节大小  8
+        self.ser.stopbits=self.stopbits #停止位    1
+        self.ser.parity=self.parity     #校验位 N－无校验，E－偶校验，O－奇校验
         try:
             self.ser.open()
         except:
-            LogError(f"串口打开失败！")
+            LogError(f"USB打开失败！")
             return False
 
         if(self.ser.isOpen()):
-            LogInfo("串口打开成功！")
+            LogInfo("USB打开成功！")
             self.is_open = True
             return True
         else:
-            LogError("串口打开失败！")
+            LogError("USB打开失败！")
 
-    def ClosePort(self) -> bool:
+    def close(self) -> bool:
         self.ser.close()
         if(self.ser.isOpen()):
-            LogError("串口关闭失败！")
+            LogError("USB关闭失败！")
             return False
         else:
-            LogInfo("串口关闭成功！")
+            LogInfo("USB关闭成功！")
             self.is_open = False
             return True
         
-    def GetPort(self) -> list:
+    def get(self) -> list:
         ports = serial.tools.list_ports.comports()
         if len(ports) == 0:
-            LogWarning("未找到串口！")
+            LogWarning("未找到USB设备！")
         
         for port in ports:
             LogInfo(port)
             
         return ports
 
+    def modify(self, port:str, baudrate:int=9600, bytesize:int=8, stopbits:int=1, parity:str="N") -> bool:
+        if self.is_open:
+            LogWarning("USB已经打开！")
+            LogError("USB设备信息更新失败！")
+            return False
+        self.port=port         #端口
+        self.baudrate=baudrate #波特率    9600
+        self.bytesize=bytesize #字节大小  8
+        self.stopbits=stopbits #停止位    1
+        self.parity=parity     #校验位 N－无校验，E－偶校验，O－奇校验
+        LogInfo("USB设备信息已更新！")
+        return True
+        
+        
+
 ############################################################
 #  串口数据收发
-#  ReadData
+#  read
 ############################################################
     
-    def ReadData(self, size:int) -> bytes:
+    def read(self, size:int) -> bytes:
         data = self.ser.read(size)
         return data
 
@@ -73,18 +95,19 @@ if __name__ == '__main__':
     import struct
     
     usb = USB_Device()
-    usb.GetPort()
-    usb.OpenPort("COM11")
+    usb.get()
+    usb.modify(port = "COM11")
+    usb.open()
     
     received_data = b''
     data = b''
     #读取帧头的第一个字节
     while data != b'\x5a':
-        data = usb.ReadData(1)
+        data = usb.read(1)
         print('data=',data)
         received_data += data
     #读取帧头剩余的3个字节
-    data = usb.ReadData(3)
+    data = usb.read(3)
     received_data += data
     print('received=',received_data)
     crc8 = crc.GetCRC8(received_data[:-1])
@@ -95,7 +118,7 @@ if __name__ == '__main__':
     data_len = int(received_data[1])
     data_id = int(received_data[2])
     LogInfo("接收到数据,数据长度为%d,数据ID为%d"%(data_len,data_id))
-    data = usb.ReadData(data_len+2)
+    data = usb.read(data_len+2)
     received_data += data
     crc16 = crc.GetCRC16(received_data[:-2])
     print('received=',received_data)
@@ -105,6 +128,6 @@ if __name__ == '__main__':
     print('crc16_ok=',crc.VerifyCRC16(received_data))
     
     
-    usb.ClosePort()
+    usb.close()
     
     
