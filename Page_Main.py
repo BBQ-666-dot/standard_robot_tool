@@ -5,4 +5,7 @@ class Page_Main(tk.Frame):
         super().__init__(master, **kwargs)
         self.id = 1
     
+    def CreatePage(self):
+        pass
+        tk.Label(self, text='主页面').pack(pady=(50, 0))
     

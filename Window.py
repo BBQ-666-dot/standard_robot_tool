@@ -76,13 +76,13 @@ class Window():
     
     def SwitchPage(self, page_id:int):
         if page_id == self.page_main.id:
-            return
+            # return
             self.page_main.lift()
         elif page_id == self.page_debug.id:
-            return
+            # return
             self.page_debug.lift()
         elif page_id == self.page_robot_state.id:
-            return
+            # return
             self.page_robot_state.lift()
 
 
@@ -90,6 +90,7 @@ class Window():
 #  界面创建
 #  InitUI 初始化UI
 #  CreateMenu 创建菜单栏
+#  CreatePages 创建页面
 ############################################################
     
     def InitUI(self):
@@ -98,6 +99,7 @@ class Window():
         self.window.geometry(f'{self.width}x{self.height}')
         self.window.resizable(0,0)
         self.CreateMenu()
+        self.CreatePages()
 
     def CreateMenu(self):
         '''创建菜单栏'''
@@ -126,18 +128,26 @@ class Window():
         button_debug = tk.Button(self.window, 
                                 text='调试数据', 
                                 relief=tk.FLAT,
-                                command=lambda:self.SwitchPage(self.page_main.id),
+                                command=lambda:self.SwitchPage(self.page_debug.id),
                                 font=button_font)
         button_debug.place(x=button_width * 1, y=0, width=button_width, height=button_height)
 
         button_robot_state = tk.Button(self.window, 
                                 text='机体状态', 
                                 relief=tk.FLAT,
-                                command=lambda:self.SwitchPage(self.page_main.id),
+                                command=lambda:self.SwitchPage(self.page_robot_state.id),
                                 font=button_font)
         button_robot_state.place(x=button_width * 2, y=0, width=button_width, height=button_height)
         # button_data.bind("<Enter>", on_enter)
         # button_data.bind("<Leave>", on_leave)
-        
+    
+    def CreatePages(self):
+        '''创建页面'''
+        self.page_main.CreatePage()
+        self.page_debug.CreatePage()
+        self.page_robot_state.CreatePage()
+        self.page_main.place(x=0, y=30, width=self.width, height=self.height-30)
+        self.page_debug.place(x=0, y=30, width=self.width, height=self.height-30)
+        self.page_robot_state.place(x=0, y=30, width=self.width, height=self.height-30)
         
 
