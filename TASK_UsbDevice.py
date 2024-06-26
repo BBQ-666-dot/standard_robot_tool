@@ -16,6 +16,7 @@ def TASK_UsbDevice(usb:USB_Device, oprations:list):
     oprations: 操作列表
     '''
     LogInfo("开始运行 StandardRobot++ 上位机的USB通信模块")
+    time.sleep(0.001)
     
     usb.get()
     
@@ -54,4 +55,7 @@ if __name__ == '__main__':
     
     usb.modify("COM11",200,8,1,"N")
     oprations.append(OPEN_USB)
+    
+    time.sleep(3)
+    oprations.append(STOP_APP)
 
