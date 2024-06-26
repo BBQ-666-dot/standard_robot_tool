@@ -7,13 +7,14 @@ AddLib.add_lib()
 from OperationTypedef import OPEN_USB,CLOSE_USB,STOP_APP
 from lib.log_info import LogError , LogInfo , LogWarning
 from lib.usb_divice import USB_Device
+from lib.data_procecss import Data_Process
 import lib.CRC8_CRC16 as crc
 import threading
 import time
 import datetime
 import struct
 
-def TASK_UsbDevice(usb:USB_Device, oprations:list):
+def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
     '''
     usb: USB设备
     oprations: 操作列表
@@ -59,6 +60,8 @@ def TASK_UsbDevice(usb:USB_Device, oprations:list):
                 
                 time_stamp = (struct.unpack('<I', received_data[4:8])[0])/1000
                 print(f"时间戳:{time_stamp}")
+                
+                data_process.receive(received_data)
             
             
             # print(datetime.datetime.now())
@@ -72,14 +75,15 @@ def TASK_UsbDevice(usb:USB_Device, oprations:list):
 
 if __name__ == '__main__':
     usb = USB_Device()
+    data_process = Data_Process()
     oprations = []
     
-    usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb,oprations))
+    usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb,data_process,oprations))
     usb_divice_task_thread.start()
     
-    usb.modify("COM11",200,8,1,"N")
+    usb.modify("COM6",200,8,1,"N")
     oprations.append(OPEN_USB)
     
-    time.sleep(2)
+    time.sleep(0.5)
     oprations.append(STOP_APP)
 
