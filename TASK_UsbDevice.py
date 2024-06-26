@@ -49,25 +49,14 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
             crc_ok = crc.VerifyCRC8(received_data)
             if crc_ok:            
                 data_len = int(received_data[1])
-                # data_id = int(received_data[2])
-                # LogInfo("接收到数据,数据长度为%d,数据ID为%d"%(data_len,data_id))
             
                 data = usb.read(data_len+2)
                 received_data += data
                 crc_ok = crc.VerifyCRC16(received_data)
                 if crc_ok:
-                    LogInfo("接收到数据:%s"%received_data)
-                
-                # time_stamp = (struct.unpack('<I', received_data[4:8])[0])/1000
-                # print(f"时间戳:{time_stamp}")
-                
-                data_process.receive(received_data)
-            
-            
-            # print(datetime.datetime.now())
+                    data_process.receive(received_data)
         else:
             pass
-            # print(datetime.datetime.now())
 
     if usb.is_open:
         usb.close()
@@ -81,7 +70,7 @@ if __name__ == '__main__':
     usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb,data_process,oprations))
     usb_divice_task_thread.start()
     
-    usb.modify("COM6",200,8,1,"N")
+    usb.modify("COM6",9600,8,1,"N")
     oprations.append(OPEN_USB)
     
     time.sleep(0.5)

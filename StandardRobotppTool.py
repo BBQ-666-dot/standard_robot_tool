@@ -5,21 +5,23 @@ import AddLib
 AddLib.add_lib()
 
 from lib.log_info import LogError , LogInfo , LogWarning
-import lib.usb_divice as usb_divice
+from lib.usb_divice import USB_Device
+from lib.data_procecss import Data_Process
 import threading
 import queue
 import time
-from OperationTypedef import STOP_APP
+from OperationTypedef import OPEN_USB,STOP_APP
 from TASK_UsbDevice import TASK_UsbDevice
 from TASK_Monitor import TASK_Monitor
 from TASK_Window import TASK_Window
 
 LogInfo("开始运行 StandardRobot++ 上位机")
 
-usb = usb_divice.USB_Device()
+usb = USB_Device()
+data_process = Data_Process()
 operation_list = []
 
-usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb,operation_list))
+usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list))
 usb_divice_task_thread.start()
 
 monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb,operation_list))
@@ -28,47 +30,13 @@ monitor_task_thread.start()
 window_task_thread = threading.Thread(target=TASK_Window, args=(usb,operation_list))
 window_task_thread.start()
 
+############################################################
+#  test
+############################################################
+usb.modify("COM6",9600,8,1,"N")
+operation_list.append(OPEN_USB)
 
-time.sleep(5)
+time.sleep(2)
 operation_list.append(STOP_APP)
 
-LogInfo("结束运行 StandardRobot++ 上位机")
-
-# import threading
-# import queue
-# import time
-
-# def producer(q):
-#     for i in range(5):
-#         item = f'数据项{i}'
-#         q.put(item)
-#         print(f'生产者产生了 {item}')
-#         time.sleep(1)
-
-# def consumer(q):
-#     while True:
-#         item = q.get()
-#         if item is None:
-#             break  # None是停止信号
-#         print(f'消费者消费了 {item}')
-#         q.task_done()
-
-# # 创建队列实例
-# q = queue.Queue()
-
-# # 创建并启动生产者线程
-# t1 = threading.Thread(target=producer, args=(q,))
-# t1.start()
-
-# # 创建并启动消费者线程
-# t2 = threading.Thread(target=consumer, args=(q,))
-# t2.start()
-
-# # 等待生产者线程完成
-# t1.join()
-
-# # 发送停止信号给消费者线程
-# q.put(None)
-
-# # 等待消费者线程完成
-# t2.join()
+# LogInfo("结束运行 StandardRobot++ 上位机")
