@@ -5,6 +5,8 @@
 import tkinter as tk
 import tkinter.ttk
 import tkinter.messagebox
+from tkinter import font
+
 from PIL import Image
 import serial.tools.list_ports
 import datetime as dt
@@ -29,7 +31,10 @@ class Window():
         LogInfo('版本已确认：' + self.version)
         self.height = 0
         self.width = 0
-
+    
+    def BlankFunction(self):
+        '''空函数，用于占位'''
+        pass
 ############################################################
 #  主要功能
 #  InitApp 初始化程序
@@ -47,19 +52,15 @@ class Window():
         '''运行程序'''
         self.window.mainloop()
     
-    def QuitApp(self):
-        '''弹出一个弹窗，询问是否退出，如果是则退出，否则不退出'''
-        pass
-        # quit_app = tkinter.messagebox.askyesno(title='提示', message='是否退出？')
-        # if quit_app:#退出程序
-        #     if self.serial_port_model.port_is_open:
-        #         self.serial_data_read_module.CloseSerialPort()
-        #     sys.exit(0)
+    # def QuitApp(self):
+    #     '''弹出一个弹窗，询问是否退出，如果是则退出，否则不退出'''
+    #     pass
+    #     quit_app = tkinter.messagebox.askyesno(title='提示', message='是否退出？')
+    #     if quit_app:#退出程序
+    #         if self.serial_port_model.port_is_open:
+    #             self.serial_data_read_module.CloseSerialPort()
+    #         sys.exit(0)
         
-    def BlankFunction(self):
-        '''空函数，用于占位'''
-        pass
-
 ############################################################
 #  界面创建
 #  InitUI 初始化UI
@@ -71,31 +72,35 @@ class Window():
         self.window.title('StandardRobot++ Tool  ' + self.version)
         self.window.geometry(f'{self.width}x{self.height}')
         self.window.resizable(0,0)
-        
-        # self.CreateMenu()
+        self.CreateMenu()
 
     def CreateMenu(self):
         '''创建菜单栏'''
-        #菜单栏
-        MenuBar = tk.Menu(self.window)
-        self.window.config(menu=MenuBar)
-        #菜单栏/文件
-        Menu_File = tk.Menu(MenuBar, tearoff=0)
-        MenuBar.add_cascade(label='文件', menu=Menu_File)
-        #菜单栏/文件/打开
-        # Menu_File.add_command(label='打开', command=self.BlankFunction)
-        #菜单栏/文件/保存
-        # Menu_File.add_command(label='保存输入波形图', command=self.SaveInputWaveform_Click)
-        # #菜单栏/文件/退出
-        # Menu_File.add_command(label='退出', command=self.Quit_App)
-        # #菜单栏/帮助
-        # Menu_Help = tk.Menu(MenuBar, tearoff=0)
-        # MenuBar.add_cascade(label='帮助', menu=Menu_Help)
-        # #菜单栏/帮助/如何使用
-        # Menu_Help.add_command(label='如何使用', command=hw.RunHowToUse)
-        # #菜单栏/帮助/关于
-        # Menu_Help.add_command(label='关于程序', command=hw.RunAbout)
-        # #菜单栏/帮助/历史版本
-        # Menu_Help.add_command(label='历史版本', command=self.BlankFunction)
-        # #菜单栏/打赏
-        # MenuBar.add_command(label='打赏', command=hw.RunPay)
+        button_width = 100
+        button_height = 50
+        
+        def on_enter(e):
+            e.widget.config(background='darkgrey')
+        def on_leave(e):
+            e.widget.config(background='SystemButtonFace')  # 使用系统默认按钮背景色
+        
+        button_main = tk.Button(self.window, 
+                                text='主界面', 
+                                relief=tk.FLAT,
+                                command=self.BlankFunction)
+        button_main.place(x=0, y=0, width=button_width, height=button_height)
+        button_main.bind("<Enter>", on_enter)
+        button_main.bind("<Leave>", on_leave)
+        
+        button_data = tk.Button(self.window, 
+                                text='数据', 
+                                relief=tk.FLAT,
+                                command=self.BlankFunction)
+        button_data.place(x=button_width, y=0, width=button_width, height=button_height)
+        button_data.bind("<Enter>", on_enter)
+        button_data.bind("<Leave>", on_leave)
+
+        
+        
+        
+
