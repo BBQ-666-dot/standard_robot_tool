@@ -21,18 +21,18 @@ LogInfo("开始运行 StandardRobot++ 上位机")
 
 usb = USB_Device()
 data_process = Data_Process()
-window = Window()
-
 operation_list = []
+
+window = Window(usb, data_process, operation_list)
 
 usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list))
 usb_divice_task_thread.start()
 
-monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, operation_list))
-monitor_task_thread.start()
+# monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, operation_list))
+# monitor_task_thread.start()
 
 
-window.InitApp()
+window.InitApp(width=800, height=500)
 window.RunApp()
 
 
@@ -41,8 +41,10 @@ window.RunApp()
 ############################################################
 usb.modify("COM6",9600,8,1,"N")
 operation_list.append(OPEN_USB)
+print(window.operations)
 
-time.sleep(2)
+time.sleep(0.5)
 operation_list.append(STOP_APP)
+print(window.operations)
 
 # LogInfo("结束运行 StandardRobot++ 上位机")

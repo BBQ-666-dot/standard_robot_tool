@@ -49,7 +49,7 @@ class Data_Process():
             }
             
             self.imu_data.update(imu)
-            print(self.imu_data.latest)
+            # print(self.imu_data.latest)
             
         elif data_id == 3:
             pass

@@ -14,14 +14,21 @@ import numpy as np
 import sys
 
 from lib.log_info import LogError , LogInfo , LogWarning
-
+from lib.usb_divice import USB_Device
+from lib.data_procecss import Data_Process
 
 class Window():
-    def __init__(self) -> None:
+    def __init__(self, usb:USB_Device, data_process:Data_Process, operations:list) -> None:
+        self.usb = usb
+        self.data_process = data_process
+        self.operations = operations
+        
         self.window = tk.Tk()
         LogInfo("窗口已创建")
         self.version = 'V1.0.0'
         LogInfo('版本已确认：' + self.version)
+        self.height = 0
+        self.width = 0
 
 ############################################################
 #  主要功能
@@ -29,8 +36,10 @@ class Window():
 #  RunApp 运行程序
 #  QuitApp 退出程序
 ############################################################
-    def InitApp(self):
+    def InitApp(self, width:int, height:int):
         '''初始化程序'''
+        self.height = height
+        self.width = width
         self.InitUI()
         LogInfo('UI已初始化')
     
@@ -60,7 +69,7 @@ class Window():
     def InitUI(self):
         '''初始化UI'''
         self.window.title('StandardRobot++ Tool  ' + self.version)
-        self.window.geometry('1200x500')
+        self.window.geometry(f'{self.width}x{self.height}')
         self.window.resizable(0,0)
         
         # self.CreateMenu()
