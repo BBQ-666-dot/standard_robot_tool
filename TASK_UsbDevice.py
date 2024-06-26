@@ -49,8 +49,8 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
             crc_ok = crc.VerifyCRC8(received_data)
             if crc_ok:            
                 data_len = int(received_data[1])
-                data_id = int(received_data[2])
-                LogInfo("接收到数据,数据长度为%d,数据ID为%d"%(data_len,data_id))
+                # data_id = int(received_data[2])
+                # LogInfo("接收到数据,数据长度为%d,数据ID为%d"%(data_len,data_id))
             
                 data = usb.read(data_len+2)
                 received_data += data
@@ -58,8 +58,8 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
                 if crc_ok:
                     LogInfo("接收到数据:%s"%received_data)
                 
-                time_stamp = (struct.unpack('<I', received_data[4:8])[0])/1000
-                print(f"时间戳:{time_stamp}")
+                # time_stamp = (struct.unpack('<I', received_data[4:8])[0])/1000
+                # print(f"时间戳:{time_stamp}")
                 
                 data_process.receive(received_data)
             

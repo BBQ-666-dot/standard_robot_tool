@@ -33,24 +33,21 @@ class Data_Process():
         elif data_id == 1: # Debug数据
             pass
         elif data_id == 2: # Imu数据
-            
             imu = {
-                "yaw":struct.unpack('<f', received_data[YAW_OFFEST:YAW_OFFEST+4])[0],
-                "pitch":struct.unpack('<f', received_data[PITCH_OFFEST:PITCH_OFFEST+4])[0],
-                "roll":struct.unpack('<f', received_data[ROLL_OFFEST:ROLL_OFFEST+4])[0],
+                "time_stamp":(struct.unpack('<I', received_data[4:8])[0])/1000,
                 
-                "yaw_vel":struct.unpack('<f', received_data[YAW_VEL_OFFEST:YAW_VEL_OFFEST+4])[0],
-                "pitch_vel":struct.unpack('<f', received_data[PITCH_VEL_OFFEST:PITCH_VEL_OFFEST+4])[0],
-                "roll_vel":struct.unpack('<f', received_data[ROLL_VEL_OFFEST:ROLL_VEL_OFFEST+4])[0],
+                "yaw"  :struct.unpack('<f', received_data[YAW_OFFEST   :YAW_OFFEST + 4])[0],
+                "pitch":struct.unpack('<f', received_data[PITCH_OFFEST :PITCH_OFFEST + 4])[0],
+                "roll" :struct.unpack('<f', received_data[ROLL_OFFEST  :ROLL_OFFEST + 4])[0],
+                
+                "yaw_vel"  :struct.unpack('<f', received_data[YAW_VEL_OFFEST   :YAW_VEL_OFFEST + 4])[0],
+                "pitch_vel":struct.unpack('<f', received_data[PITCH_VEL_OFFEST :PITCH_VEL_OFFEST + 4])[0],
+                "roll_vel" :struct.unpack('<f', received_data[ROLL_VEL_OFFEST  :ROLL_VEL_OFFEST + 4])[0],
             }
-            # self.imu_data.update()
             
-            print("yaw",struct.unpack('<f', received_data[YAW_OFFEST:YAW_OFFEST+4])[0])
-            print("pitch",struct.unpack('<f', received_data[PITCH_OFFEST:PITCH_OFFEST+4])[0])
-            print("roll",struct.unpack('<f', received_data[ROLL_OFFEST:ROLL_OFFEST+4])[0])
-            print("yaw_vel",struct.unpack('<f', received_data[YAW_VEL_OFFEST:YAW_VEL_OFFEST+4])[0])
-            print("pitch_vel",struct.unpack('<f', received_data[PITCH_VEL_OFFEST:PITCH_VEL_OFFEST+4])[0])
-            print("roll_vel",struct.unpack('<f', received_data[ROLL_VEL_OFFEST:ROLL_VEL_OFFEST+4])[0])
+            self.imu_data.update(imu)
+            print(self.imu_data.latest)
+            
         elif data_id == 3:
             pass
         

@@ -7,16 +7,20 @@
 class Imu_Data():
     def __init__(self) -> None:
         self.latest = {
-            "yaw":0,
-            "pitch":0,
-            "roll":0,
+            "time_stamp":[], # 时间戳(s)
             
-            "yaw_vel":0,
-            "pitch_vel":0,
-            "roll_vel":0,
+            "yaw":0,   # 偏航角(rad)
+            "pitch":0, # 俯仰角(rad)
+            "roll":0,  # 横滚角(rad)
+            
+            "yaw_vel":0,   # 偏航角速度(rad/s)
+            "pitch_vel":0, # 俯仰角速度(rad/s)
+            "roll_vel":0,  # 横滚角速度(rad/s)
         }
         
         self.storage = {
+            "time_stamp":[],
+            
             "yaw":[],
             "pitch":[],
             "roll":[],
@@ -34,6 +38,8 @@ class Imu_Data():
 
     def update(self,data:dict):
         self.latest = data.copy()
+        
+        self.storage['time_stamp'].append(data['time_stamp'])
         
         self.storage['yaw'].append(data['yaw'])
         self.storage['pitch'].append(data['pitch'])
@@ -53,6 +59,8 @@ class Imu_Data():
             "pitch_vel":0,
             "roll_vel":0,
         }
+        
+        self.storage['time_stamp'].clear()
 
         self.storage["yaw"].clear()
         self.storage["pitch"].clear()
