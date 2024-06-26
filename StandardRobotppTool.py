@@ -28,8 +28,14 @@ window = Window(usb, data_process, operation_list)
 usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list))
 usb_divice_task_thread.start()
 
-# monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, operation_list))
-# monitor_task_thread.start()
+monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list))
+monitor_task_thread.start()
+
+
+# usb.modify("COM6",9600,8,1,"N")
+# operation_list.append(OPEN_USB)
+# print(window.operations)
+
 
 
 window.InitApp(width=800, height=500)
@@ -43,7 +49,8 @@ usb.modify("COM6",9600,8,1,"N")
 operation_list.append(OPEN_USB)
 print(window.operations)
 
-time.sleep(0.5)
+# time.sleep(10)
+time.sleep(0.1)
 operation_list.append(STOP_APP)
 print(window.operations)
 

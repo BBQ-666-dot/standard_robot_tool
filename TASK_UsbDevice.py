@@ -37,6 +37,8 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
                 break #stop app
         
         if usb.is_open:
+            if usb.buf_is_empty():
+                time.sleep(0.001)
             received_data = b''
             data = b''
             #读取帧头的第一个字节
@@ -73,6 +75,6 @@ if __name__ == '__main__':
     usb.modify("COM6",9600,8,1,"N")
     oprations.append(OPEN_USB)
     
-    time.sleep(0.5)
+    time.sleep(20)
     oprations.append(STOP_APP)
 
