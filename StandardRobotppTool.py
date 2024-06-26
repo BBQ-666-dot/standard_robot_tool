@@ -15,15 +15,24 @@ import lib.usb_divice as usb_divice
 import threading
 import queue
 import time
+from OperationTypedef import STOP_APP
 from TASK_UsbDevice import TASK_UsbDevice
+from TASK_Monitor import TASK_Monitor
 
 LogInfo("开始运行 StandardRobot++ 上位机")
 
 usb = usb_divice.USB_Device()
-param_list = [1,2,3,4,5,6,7,8,9,10]
+operation_list = []
 
-usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb,))
+usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb,operation_list))
 usb_divice_task_thread.start()
+
+monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb,operation_list))
+monitor_task_thread.start()
+
+
+time.sleep(5)
+operation_list.append(STOP_APP)
 
 # import threading
 # import queue

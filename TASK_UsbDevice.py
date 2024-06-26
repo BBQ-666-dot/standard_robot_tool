@@ -14,9 +14,7 @@ from lib.log_info import LogError , LogInfo , LogWarning
 from lib.usb_divice import USB_Device
 import threading
 import time
-from OperationTypedef import OPEN_USB,CLOSE_USB
-
-usb_operations = [OPEN_USB,CLOSE_USB]
+from OperationTypedef import OPEN_USB,CLOSE_USB,STOP_APP
 
 def TASK_UsbDevice(usb:USB_Device, oprations:list):
     '''
@@ -29,12 +27,15 @@ def TASK_UsbDevice(usb:USB_Device, oprations:list):
     
     while True:
         #处理操作
-        if len(oprations)>0 and oprations[0] in usb_operations:
+        if len(oprations)>0:
             if oprations[0] == OPEN_USB:
                 usb.open()
+                oprations.pop(0)
             elif oprations[0] == CLOSE_USB:
                 usb.close()
-            oprations.pop(0)
+                oprations.pop(0)
+            elif oprations[0] == STOP_APP:
+                break #stop app
         
         if usb.is_open:
             data=usb.read(30)
@@ -46,7 +47,8 @@ def TASK_UsbDevice(usb:USB_Device, oprations:list):
         # time.sleep(0.001) # Sleep for 1ms
         time.sleep(0.1)
 
-    usb.close()
+    if usb.is_open:
+        usb.close()
     LogInfo("结束运行 StandardRobot++ 上位机的USB通信模块")
 
 if __name__ == '__main__':
