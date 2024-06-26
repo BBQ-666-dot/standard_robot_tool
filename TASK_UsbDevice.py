@@ -1,14 +1,8 @@
 '''
 StandardRobot++ 上位机的USB通信模块
 '''
-import sys
-import os
-# 获取当前文件的目录
-current_dir = os.path.dirname(__file__)
-# 构建到lib目录的相对路径
-lib_path = os.path.join(current_dir, 'lib')
-
-sys.path.append(lib_path)
+import AddLib
+AddLib.add_lib()
 
 from lib.log_info import LogError , LogInfo , LogWarning
 from lib.usb_divice import USB_Device
