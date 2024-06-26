@@ -7,6 +7,9 @@ import CRC8_CRC16 as crc
 import struct
 from data_typedef import Imu_Data
 
+TIME_STAMP_OFFEST = 4
+
+# imu数据的偏移量
 YAW_OFFEST = 8
 PITCH_OFFEST = 12
 ROLL_OFFEST = 16
@@ -34,15 +37,15 @@ class Data_Process():
             pass
         elif data_id == 2: # Imu数据
             imu = {
-                "time_stamp":(struct.unpack('<I', received_data[4:8])[0])/1000,
+                "time_stamp":(struct.unpack('<I', received_data[TIME_STAMP_OFFEST : TIME_STAMP_OFFEST+4])[0])/1000,
                 
-                "yaw"  :struct.unpack('<f', received_data[YAW_OFFEST   :YAW_OFFEST + 4])[0],
-                "pitch":struct.unpack('<f', received_data[PITCH_OFFEST :PITCH_OFFEST + 4])[0],
-                "roll" :struct.unpack('<f', received_data[ROLL_OFFEST  :ROLL_OFFEST + 4])[0],
+                "yaw"  :struct.unpack('<f', received_data[YAW_OFFEST   : YAW_OFFEST + 4])[0],
+                "pitch":struct.unpack('<f', received_data[PITCH_OFFEST : PITCH_OFFEST + 4])[0],
+                "roll" :struct.unpack('<f', received_data[ROLL_OFFEST  : ROLL_OFFEST + 4])[0],
                 
-                "yaw_vel"  :struct.unpack('<f', received_data[YAW_VEL_OFFEST   :YAW_VEL_OFFEST + 4])[0],
-                "pitch_vel":struct.unpack('<f', received_data[PITCH_VEL_OFFEST :PITCH_VEL_OFFEST + 4])[0],
-                "roll_vel" :struct.unpack('<f', received_data[ROLL_VEL_OFFEST  :ROLL_VEL_OFFEST + 4])[0],
+                "yaw_vel"  :struct.unpack('<f', received_data[YAW_VEL_OFFEST   : YAW_VEL_OFFEST + 4])[0],
+                "pitch_vel":struct.unpack('<f', received_data[PITCH_VEL_OFFEST : PITCH_VEL_OFFEST + 4])[0],
+                "roll_vel" :struct.unpack('<f', received_data[ROLL_VEL_OFFEST  : ROLL_VEL_OFFEST + 4])[0],
             }
             
             self.imu_data.update(imu)
