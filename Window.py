@@ -19,6 +19,10 @@ from lib.log_info import LogError , LogInfo , LogWarning
 from lib.usb_divice import USB_Device
 from lib.data_procecss import Data_Process
 
+from Page_Main import Page_Main
+from Page_Debug import Page_Debug
+from Page_RobotState import Page_Robot_State
+
 class Window():
     def __init__(self, usb:USB_Device, data_process:Data_Process, operations:list) -> None:
         self.usb = usb
@@ -31,6 +35,10 @@ class Window():
         LogInfo('版本已确认：' + self.version)
         self.height = 0
         self.width = 0
+        
+        self.page_main = Page_Main(self.window)
+        self.page_debug = Page_Debug(self.window)
+        self.page_robot_state = Page_Robot_State(self.window)
     
     def BlankFunction(self):
         '''空函数，用于占位'''
@@ -60,7 +68,24 @@ class Window():
     #         if self.serial_port_model.port_is_open:
     #             self.serial_data_read_module.CloseSerialPort()
     #         sys.exit(0)
-        
+
+############################################################
+#  切换界面
+#  SwitchPage 切换界面
+############################################################
+    
+    def SwitchPage(self, page_id:int):
+        if page_id == self.page_main.id:
+            return
+            self.page_main.lift()
+        elif page_id == self.page_debug.id:
+            return
+            self.page_debug.lift()
+        elif page_id == self.page_robot_state.id:
+            return
+            self.page_robot_state.lift()
+
+
 ############################################################
 #  界面创建
 #  InitUI 初始化UI
@@ -79,28 +104,40 @@ class Window():
         button_width = 100
         button_height = 50
         
-        def on_enter(e):
-            e.widget.config(background='darkgrey')
-        def on_leave(e):
-            e.widget.config(background='SystemButtonFace')  # 使用系统默认按钮背景色
+        button_width = self.width / 3
+        button_height = 30
+        
+        button_font = ('黑体', 15)
+        
+        # def on_enter(e):
+        #     e.widget.config(background='darkgrey')
+        # def on_leave(e):
+        #     e.widget.config(background='SystemButtonFace')  # 使用系统默认按钮背景色
         
         button_main = tk.Button(self.window, 
                                 text='主界面', 
                                 relief=tk.FLAT,
-                                command=self.BlankFunction)
-        button_main.place(x=0, y=0, width=button_width, height=button_height)
-        button_main.bind("<Enter>", on_enter)
-        button_main.bind("<Leave>", on_leave)
+                                command=lambda:self.SwitchPage(self.page_main.id),
+                                font=button_font)
+        button_main.place(x=button_width * 0, y=0, width=button_width, height=button_height)
+        # button_main.bind("<Enter>", on_enter)
+        # button_main.bind("<Leave>", on_leave)
         
-        button_data = tk.Button(self.window, 
-                                text='数据', 
+        button_debug = tk.Button(self.window, 
+                                text='调试数据', 
                                 relief=tk.FLAT,
-                                command=self.BlankFunction)
-        button_data.place(x=button_width, y=0, width=button_width, height=button_height)
-        button_data.bind("<Enter>", on_enter)
-        button_data.bind("<Leave>", on_leave)
+                                command=lambda:self.SwitchPage(self.page_main.id),
+                                font=button_font)
+        button_debug.place(x=button_width * 1, y=0, width=button_width, height=button_height)
 
-        
+        button_robot_state = tk.Button(self.window, 
+                                text='机体状态', 
+                                relief=tk.FLAT,
+                                command=lambda:self.SwitchPage(self.page_main.id),
+                                font=button_font)
+        button_robot_state.place(x=button_width * 2, y=0, width=button_width, height=button_height)
+        # button_data.bind("<Enter>", on_enter)
+        # button_data.bind("<Leave>", on_leave)
         
         
 
