@@ -1,2 +1,3 @@
 OPEN_USB = 1
 CLOSE_USB = 2
+STOP_APP = 3
