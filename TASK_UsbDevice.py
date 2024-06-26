@@ -4,11 +4,14 @@ StandardRobot++ 上位机的USB通信模块
 import AddLib
 AddLib.add_lib()
 
+from OperationTypedef import OPEN_USB,CLOSE_USB,STOP_APP
 from lib.log_info import LogError , LogInfo , LogWarning
 from lib.usb_divice import USB_Device
+import lib.CRC8_CRC16 as crc
 import threading
 import time
-from OperationTypedef import OPEN_USB,CLOSE_USB,STOP_APP
+import datetime
+import struct
 
 def TASK_UsbDevice(usb:USB_Device, oprations:list):
     '''
@@ -33,14 +36,35 @@ def TASK_UsbDevice(usb:USB_Device, oprations:list):
                 break #stop app
         
         if usb.is_open:
-            data=usb.read(30)
-            print(data)
+            received_data = b''
+            data = b''
+            #读取帧头的第一个字节
+            while data != b'\x5a':
+                data = usb.read(1)
+                received_data += data
+            #读取帧头剩余的3个字节
+            data = usb.read(3)
+            received_data += data
+            crc_ok = crc.VerifyCRC8(received_data)
+            if crc_ok:            
+                data_len = int(received_data[1])
+                data_id = int(received_data[2])
+                LogInfo("接收到数据,数据长度为%d,数据ID为%d"%(data_len,data_id))
+            
+                data = usb.read(data_len+2)
+                received_data += data
+                crc_ok = crc.VerifyCRC16(received_data)
+                if crc_ok:
+                    LogInfo("接收到数据:%s"%received_data)
+                
+                time_stamp = (struct.unpack('<I', received_data[4:8])[0])/1000
+                print(f"时间戳:{time_stamp}")
+            
+            
+            # print(datetime.datetime.now())
         else:
             pass
-        
-        # 任务延时
-        # time.sleep(0.001) # Sleep for 1ms
-        time.sleep(0.1)
+            # print(datetime.datetime.now())
 
     if usb.is_open:
         usb.close()
@@ -56,6 +80,6 @@ if __name__ == '__main__':
     usb.modify("COM11",200,8,1,"N")
     oprations.append(OPEN_USB)
     
-    time.sleep(3)
+    time.sleep(2)
     oprations.append(STOP_APP)
 
