@@ -47,7 +47,7 @@ class Page_Debug(tk.Frame):
     def UpdateDataNameList(self) -> None:
         '''更新数据名称列表'''
         data_name_list = list(self.data_process.debug_data.latest['datas'].keys())
-        print(data_name_list)
+        # print(data_name_list)
         self.data_name_moodel.UpdateDataNameList(data_name_list)
         self.data_name_moodel.UpdateCheckbuttons()
         
@@ -55,7 +55,25 @@ class Page_Debug(tk.Frame):
         return
     
     def UpdatePlot(self) -> None:
-        self.after(100, self.UpdateDataNameList) # 100ms后更新图片
+        print(self.data_name_moodel.selected_names)
+        if self.is_ploting:
+            data_dict = self.data_process.debug_data.latest['datas']
+            y = []
+            y_labels = []
+            
+            for name in self.data_name_moodel.selected_names:
+                y_labels.append(name)
+                y.append(self.data_process.debug_data.storage['datas'][name][-500:])
+            
+            if len(self.data_name_moodel.selected_names) == 0:
+                y = [[]]
+                x = []
+            else:
+                x = self.data_process.debug_data.storage['time_stamp'][-500:]
+                
+            self.plot_graph_model.UpdateGraph(x,y,y_labels)
+        
+        self.after(100, self.UpdatePlot) # 100ms后更新图片
         return
     ############################################################
     #  回调函数

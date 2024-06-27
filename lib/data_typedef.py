@@ -103,6 +103,9 @@ class Debug_Data():
 
     def update(self,data:dict) -> None:
         self.latest = data.copy()
+        
+        self.storage['time_stamp'].append(data['time_stamp'])
+        
         for key in data['datas']:
             if key not in self.storage['datas']:
                 self.storage['datas'][key] = []
