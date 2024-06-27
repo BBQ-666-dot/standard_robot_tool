@@ -140,7 +140,7 @@ class Window():
         page_height = self.height - 30
         
         self.page_main.CreatePage(page_width, page_height)
-        self.page_debug.CreatePage()
+        self.page_debug.CreatePage(page_width, page_height)
         self.page_robot_cmd.CreatePage()
         self.page_main.place(x=0, y=30, width=page_width, height=page_height)
         self.page_debug.place(x=0, y=30, width=page_width, height=page_height)
