@@ -1,8 +1,11 @@
 有控制台窗口：
-pyinstaller -F Serial_Print_APP.py
+pyinstaller -F StandardRobotppTool.py
 
 无控制台窗口：
-pyinstaller -F -w SerialPortAssistant.py
+pyinstaller -F -w StandardRobotppTool.py
 
 无控制台窗口+有图标
-pyinstaller -F -w -i SerialPortAssistant.ico SerialPortAssistant.py
+pyinstaller -F -w -i StandardRobotppTool.ico StandardRobotppTool.py
+
+使用.spec文件:
+pyinstaller StandardRobotppTool.spec
