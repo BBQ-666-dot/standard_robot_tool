@@ -73,11 +73,9 @@ class Imu_Data():
         return
     
     def limit(self,length:int) -> None:
-        if self.length <= length:
-            return
-
         for key in self.storage:
             self.storage[key] = self.storage[key][-length:]
+        self.length = len(self.storage['time_stamp'])
         return
         
         
@@ -92,6 +90,7 @@ class Debug_Data():
             "time_stamp":[],
             "datas":{},
         }
+        self.length = len(self.storage['time_stamp'])
         return
     
     ############################################################
@@ -110,6 +109,8 @@ class Debug_Data():
             if key not in self.storage['datas']:
                 self.storage['datas'][key] = []
             self.storage['datas'][key].append(data['datas'][key])
+        
+        self.length = len(self.storage['time_stamp'])
         return
 
     def clear(self) -> None:
@@ -127,12 +128,12 @@ class Debug_Data():
         return
 
     def limit(self,length:int) -> None:
-        if self.length <= length:
-            return
         self.storage['time_stamp'] = self.storage['time_stamp'][-length:]
         
         for key in self.storage['datas']:
             self.storage['datas'][key] = self.storage['datas'][key][-length:]
+        
+        self.length = len(self.storage['time_stamp'])
         return
 
 
