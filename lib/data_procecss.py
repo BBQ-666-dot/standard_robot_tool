@@ -21,11 +21,13 @@ ROLL_VEL_OFFEST = 28
 class Data_Process():
     def __init__(self) -> None:
         self.imu_data = Imu_Data()
+        return 
 
 ############################################################
 #  数据处理基本功能
 #  receive 对接收到的数据进行处理并存储
 #  send
+#  clear 清空数据
 ############################################################
 
     def receive(self,received_data:bytes):
@@ -58,3 +60,8 @@ class Data_Process():
 
     def send(self):
         pass
+        return 
+    
+    def clear(self):
+        self.imu_data.clear()
+        return
