@@ -18,7 +18,7 @@ def TASK_Monitor(usb:USB_Device, data_process:Data_Process, oprations:list):
             break #stop app
 
         LogInfo(f"storage_len:{len(data_process.imu_data.storage['time_stamp'])}")
-        LogInfo("oprations:",oprations)
+        LogInfo(f"oprations:{oprations}")
         time.sleep(1)
     
     LogInfo("结束运行 StandardRobot++ 上位机的监测模块")

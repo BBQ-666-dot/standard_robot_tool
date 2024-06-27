@@ -90,6 +90,9 @@ class USB_Device:
     def clear_rx_buf(self):
         self.ser.reset_input_buffer()
         LogInfo("接收缓存区已清空！")
+    
+    # def is_open(self) -> bool:
+    #     return self.ser.open()
         
 
 ############################################################

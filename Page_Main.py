@@ -2,6 +2,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 
 from lib.usb_divice import USB_Device
+from OperationTypedef import OPEN_USB, CLOSE_USB
 
 class SerialPart(tk.LabelFrame):
     def __init__(self, master, usb:USB_Device, operations:list, **kwargs):
@@ -54,24 +55,40 @@ class SerialPart(tk.LabelFrame):
                         command=self.TogglePort
                     )
         self.button_toggle_Port.place(x=opration_start_x, y=10+line_height, width=100, height=line_height)
+
+############################################################
+#  检测函数
+#  CheckPort 检测串口状态
+############################################################
+    def CheckPort(self):
+        if self.usb.is_open: # 串口已经打开
+            self.label_toggle_port['bg'] = 'green'
+            self.button_toggle_Port['text'] = '关闭端口'
+        else:
+            self.label_toggle_port['bg'] = 'red'
+            self.button_toggle_Port['text'] = '打开端口'
+        
+
 ############################################################
 #  回调函数
 #  TogglePort 变更串口状态
 #  UpdateSerialPortList 更新串口列表
 ############################################################
     def TogglePort(self):
-        return
-        # if self.label_toggle_port['bg'] == 'red':
-        #     self.label_toggle_port['bg'] = 'green'
-        #     self.label_toggle_port['text'] = '已打开'
-        #     self.button_toggle_Port['text'] = '关闭端口'
-        #     self.operations.append('OPEN_USB')
-        # else:
-        #     self.label_toggle_port['bg'] = 'red'
-        #     self.label_toggle_port['text'] = '未打开'
-        #     self.button_toggle_Port['text'] = '打开端口'
-        #     self.operations.append('CLOSE_USB'
-    
+        if self.label_toggle_port['bg'] == 'red':
+            if self.combobox_port.get() == '无可用端口':
+                return
+            self.usb.modify(self.combobox_port.get(),9600,8,1,"N")
+            self.operations.append(OPEN_USB)
+            self.label_toggle_port['bg'] = 'green'
+            self.button_toggle_Port['text'] = '关闭端口'
+        else:
+            self.operations.append(CLOSE_USB)
+            self.label_toggle_port['bg'] = 'red'
+            self.button_toggle_Port['text'] = '打开端口'
+        
+        self.after(100, self.CheckPort)# 100ms后检查串口状态
+
     def UpdateSerialPortList(self):
         '''更新串口列表'''
         available_ports = self.usb.get()
