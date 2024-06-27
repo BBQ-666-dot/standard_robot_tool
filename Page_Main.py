@@ -11,6 +11,9 @@ class SerialModel(tk.LabelFrame):
         self.operations = operations
         self.usb = usb
         self.AddWidget()
+        self.CheckPort()
+        self.UpdateSerialPortList()
+        return
     
     def AddWidget(self):
         line_height = 30
@@ -55,10 +58,12 @@ class SerialModel(tk.LabelFrame):
                         command=self.TogglePort
                     )
         self.button_toggle_Port.place(x=opration_start_x, y=10+line_height, width=100, height=line_height)
+        return
 
     ############################################################
-    #  检测函数
+    #  实时任务
     #  CheckPort 检测串口状态
+    #  UpdateSerialPortList 更新串口列表
     ############################################################
     def CheckPort(self):
         if self.usb.is_open: # 串口已经打开
@@ -67,11 +72,24 @@ class SerialModel(tk.LabelFrame):
         else:
             self.label_toggle_port['bg'] = 'red'
             self.button_toggle_Port['text'] = '打开端口'
+        
+        self.after(50, self.CheckPort)# 50ms后检查串口状态
+        return
+    
+    def UpdateSerialPortList(self):
+        '''更新串口列表'''
+        available_ports = self.usb.get()
+        port_name_list = list(list(zip(*list(map(list,available_ports))))[0] if len(available_ports) > 0 else ['无可用端口'])
+        self.combobox_port.configure(values=port_name_list)
+        if self.combobox_port.get() not in port_name_list:
+            self.combobox_port.current(0)
+        
+        self.after(50, self.UpdateSerialPortList)# 50ms后更新串口列表
+        return
 
     ############################################################
     #  回调函数
     #  TogglePort 变更串口状态
-    #  UpdateSerialPortList 更新串口列表
     ############################################################
     def TogglePort(self):
         if self.label_toggle_port['bg'] == 'red':
@@ -85,16 +103,7 @@ class SerialModel(tk.LabelFrame):
             self.operations.append(CLOSE_USB)
             self.label_toggle_port['bg'] = 'red'
             self.button_toggle_Port['text'] = '打开端口'
-        
-        self.after(100, self.CheckPort)# 100ms后检查串口状态
-
-    def UpdateSerialPortList(self):
-        '''更新串口列表'''
-        available_ports = self.usb.get()
-        port_name_list = list(list(zip(*list(map(list,available_ports))))[0] if len(available_ports) > 0 else ['无可用端口'])
-        self.combobox_port.configure(values=port_name_list)
-        if self.combobox_port.get() not in port_name_list:
-            self.combobox_port.current(0)
+        return
         
 
 class Page_Main(tk.Frame):

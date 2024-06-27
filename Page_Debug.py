@@ -56,8 +56,9 @@ class Page_Debug(tk.Frame):
     
     def UpdatePlot(self) -> None:
         print(self.data_name_moodel.selected_names)
+        print(self.data_process.debug_data.latest['datas'])
+        print(self.data_process.debug_data.latest['time_stamp'])
         if self.is_ploting:
-            data_dict = self.data_process.debug_data.latest['datas']
             y = []
             y_labels = []
             
@@ -73,7 +74,7 @@ class Page_Debug(tk.Frame):
                 
             self.plot_graph_model.UpdateGraph(x,y,y_labels)
         
-        self.after(100, self.UpdatePlot) # 100ms后更新图片
+        self.after(50, self.UpdatePlot) # 50ms后更新图片
         return
     ############################################################
     #  回调函数

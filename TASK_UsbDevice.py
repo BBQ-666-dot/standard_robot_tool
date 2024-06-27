@@ -26,6 +26,7 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
     
     while True:
         #处理操作
+        # print('oprations:',oprations)
         if len(oprations)>0:
             if oprations[0] == OPEN_USB:
                 usb.open()
@@ -42,7 +43,7 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
             received_data = b''
             data = b''
             #读取帧头的第一个字节
-            while data != b'\x5a':
+            while data != b'\x5a' and usb.is_open:
                 data = usb.read(1)
                 received_data += data
             #读取帧头剩余的3个字节
@@ -58,7 +59,7 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
                 if crc_ok:
                     data_process.receive(received_data)
         else:
-            pass
+            time.sleep(0.001)
 
     if usb.is_open:
         usb.close()
