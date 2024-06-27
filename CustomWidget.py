@@ -97,6 +97,7 @@ class DataNameModel(tk.Frame):
         self.name_list = [] #存储数据名称的列表
         self.selected_names = [] #存储被选中的数据名称
         self.name_list_is_updated = False #数据名称列表是否更新
+        self.AddWidget()
 
     def AddWidget(self):
         # 创建label提示内容
@@ -127,6 +128,12 @@ class DataNameModel(tk.Frame):
         # for i in range(20):
         #     self.AddCheckbutton(f"checkbutton{i}")
 
+    def UpdateDataNameList(self, name_list:list):
+        '''
+        更新数据名称列表
+        name_list:数据名称列表
+        '''
+        self.name_list = name_list.copy()
 
     def UpdateCheckbuttons(self):
         for i,name in enumerate(self.name_list):

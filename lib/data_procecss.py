@@ -63,7 +63,7 @@ class Data_Process():
                 "datas":data_dict
             }
             self.debug_data.update(debug)
-            print(self.debug_data.latest)
+            # print(self.debug_data.latest)
             
         elif data_id == 2: # Imu数据
             imu = {
