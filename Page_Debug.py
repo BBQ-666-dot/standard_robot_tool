@@ -7,9 +7,11 @@ class Page_Debug(tk.Frame):
         super().__init__(master, **kwargs)
         self.id = 2
         self.data_process = data_process
+        self.is_ploting = False
         self.data_name_moodel = DataNameModel(self)
         self.plot_graph_model = PlotGraphModel(self)
         self.after(10, self.UpdateDataNameList) # 10ms后更新数据名称列表
+        self.after(10, self.UpdatePlot) # 10ms后更新数据名称列表
     
     def CreatePage(self,width:int,height:int) -> None:
         # 左边为数据名称列表，右边为绘图区域
@@ -35,6 +37,12 @@ class Page_Debug(tk.Frame):
         # 图像绘制模块
         self.plot_graph_model.place(x=left_width, y=10, width=right_width, height=height)
         return
+
+    ############################################################
+    #  实时任务
+    #  UpdateDataNameList 更新数据名称列表
+    #  UpdatePlot 更新绘图
+    ############################################################
     
     def UpdateDataNameList(self) -> None:
         '''更新数据名称列表'''
@@ -45,10 +53,22 @@ class Page_Debug(tk.Frame):
         
         self.after(100, self.UpdateDataNameList) # 100ms后更新数据名称列表
         return
+    
+    def UpdatePlot(self) -> None:
+        self.after(100, self.UpdateDataNameList) # 100ms后更新图片
+        return
     ############################################################
     #  回调函数
     #  TogglePlot 变更绘图状态
     ############################################################
     
     def TogglePlot(self) -> None:
+        if self.label_toggle_plot['bg'] == 'red':
+            self.label_toggle_plot['bg'] = 'green'
+            self.button_toggle_Port['text'] = '停止绘图'
+            self.is_ploting = True
+        else:
+            self.label_toggle_plot['bg'] = 'red'
+            self.button_toggle_Port['text'] = '开始绘图'
+            self.is_ploting = False
         return
