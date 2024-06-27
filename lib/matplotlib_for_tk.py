@@ -28,9 +28,9 @@ class RealTimePlot_2D():
         for i,y in enumerate(y_axis_data):
             self.ax.plot(x_axis_data, y, label=y_labels[i])
         
-        self.ax.set_title(self.title, fontsize=15)  # 添加标题
-        self.ax.set_xlabel(self.x_label, fontsize=15)  # 添加X轴标签
-        self.ax.set_ylabel(self.y_label, fontsize=15)  # 添加Y轴标签
+        self.ax.set_title(self.title, fontsize=10)  # 添加标题
+        self.ax.set_xlabel(self.x_label, fontsize=10)  # 添加X轴标签
+        self.ax.set_ylabel(self.y_label, fontsize=10)  # 添加Y轴标签
         self.ax.legend(loc='upper right')  # 添加图例
         self.ax.grid(True)  # 添加网格线
         return None
