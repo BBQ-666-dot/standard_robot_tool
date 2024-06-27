@@ -90,7 +90,7 @@ class Debug_Data():
         
         self.storage = {
             "time_stamp":[],
-            "data":{},
+            "datas":{},
         }
         return
     
@@ -104,9 +104,9 @@ class Debug_Data():
     def update(self,data:dict) -> None:
         self.latest = data.copy()
         for key in data['datas']:
-            if key not in self.storage['data']:
-                self.storage['data'][key] = []
-            self.storage['data'][key].append(data['datas'][key])
+            if key not in self.storage['datas']:
+                self.storage['datas'][key] = []
+            self.storage['datas'][key].append(data['datas'][key])
         return
 
     def clear(self) -> None:
@@ -118,7 +118,7 @@ class Debug_Data():
         
         self.storage["time_stamp"].clear()
 
-        self.storage["data"] = {}
+        self.storage["datas"] = {}
 
         self.length = len(self.storage['time_stamp'])
         return
@@ -129,7 +129,7 @@ class Debug_Data():
         self.storage['time_stamp'] = self.storage['time_stamp'][-length:]
         
         for key in self.storage['datas']:
-            self.storage['data'][key] = self.storage['data'][key][-length:]
+            self.storage['datas'][key] = self.storage['datas'][key][-length:]
         return
 
 

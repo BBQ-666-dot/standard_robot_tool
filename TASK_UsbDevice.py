@@ -75,6 +75,6 @@ if __name__ == '__main__':
     usb.modify("COM6",9600,8,1,"N")
     oprations.append(OPEN_USB)
     
-    time.sleep(20)
+    time.sleep(0.5)
     oprations.append(STOP_APP)
 
