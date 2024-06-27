@@ -29,11 +29,13 @@ class Imu_Data():
             "pitch_vel":[],
             "roll_vel":[],
         }
+        self.length = len(self.storage['time_stamp'])
 
 ############################################################
 #  基本功能
 #  update 更新数据
 #  clear 清空数据
+#  limit 限制数据长度
 ############################################################
 
     def update(self,data:dict):
@@ -48,6 +50,8 @@ class Imu_Data():
         self.storage['yaw_vel'].append(data['yaw_vel'])
         self.storage['pitch_vel'].append(data['pitch_vel'])
         self.storage['roll_vel'].append(data['roll_vel'])
+        
+        self.length = len(self.storage['time_stamp'])
     
     def clear(self):
         self.latest = {
@@ -69,6 +73,21 @@ class Imu_Data():
         self.storage["yaw_vel"].clear()
         self.storage["pitch_vel"].clear()
         self.storage["roll_vel"].clear()
+        
+        self.length = len(self.storage['time_stamp'])
+    
+    def limit(self,length:int):
+        if self.length <= length:
+            return
+        self.storage['time_stamp'] = self.storage['time_stamp'][-length:]
+        
+        self.storage['yaw'] = self.storage['yaw'][-length:]
+        self.storage['pitch'] = self.storage['pitch'][-length:]
+        self.storage['roll'] = self.storage['roll'][-length:]
+        
+        self.storage['yaw_vel'] = self.storage['yaw_vel'][-length:]
+        self.storage['pitch_vel'] = self.storage['pitch_vel'][-length:]
+        self.storage['roll_vel'] = self.storage['roll_vel'][-length:]
         
         
 class Debug_Data():
