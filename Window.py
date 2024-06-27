@@ -21,7 +21,7 @@ from lib.data_procecss import Data_Process
 
 from Page_Main import Page_Main
 from Page_Debug import Page_Debug
-from Page_RobotState import Page_Robot_State
+from Page_RobotCmd import Page_Robot_Cmd
 
 class Window():
     def __init__(self, usb:USB_Device, data_process:Data_Process, operations:list) -> None:
@@ -38,7 +38,7 @@ class Window():
         
         self.page_main = Page_Main(self.window)
         self.page_debug = Page_Debug(self.window)
-        self.page_robot_state = Page_Robot_State(self.window)
+        self.page_robot_cmd = Page_Robot_Cmd(self.window)
     
     def BlankFunction(self):
         '''空函数，用于占位'''
@@ -81,9 +81,9 @@ class Window():
         elif page_id == self.page_debug.id:
             # return
             self.page_debug.lift()
-        elif page_id == self.page_robot_state.id:
+        elif page_id == self.page_robot_cmd.id:
             # return
-            self.page_robot_state.lift()
+            self.page_robot_cmd.lift()
 
 
 ############################################################
@@ -111,19 +111,12 @@ class Window():
         
         button_font = ('黑体', 15)
         
-        # def on_enter(e):
-        #     e.widget.config(background='darkgrey')
-        # def on_leave(e):
-        #     e.widget.config(background='SystemButtonFace')  # 使用系统默认按钮背景色
-        
         button_main = tk.Button(self.window, 
                                 text='主界面', 
                                 relief=tk.FLAT,
                                 command=lambda:self.SwitchPage(self.page_main.id),
                                 font=button_font)
         button_main.place(x=button_width * 0, y=0, width=button_width, height=button_height)
-        # button_main.bind("<Enter>", on_enter)
-        # button_main.bind("<Leave>", on_leave)
         
         button_debug = tk.Button(self.window, 
                                 text='调试数据', 
@@ -132,22 +125,20 @@ class Window():
                                 font=button_font)
         button_debug.place(x=button_width * 1, y=0, width=button_width, height=button_height)
 
-        button_robot_state = tk.Button(self.window, 
-                                text='机体状态', 
+        button_robot_cmd = tk.Button(self.window, 
+                                text='机体控制', 
                                 relief=tk.FLAT,
-                                command=lambda:self.SwitchPage(self.page_robot_state.id),
+                                command=lambda:self.SwitchPage(self.page_robot_cmd.id),
                                 font=button_font)
-        button_robot_state.place(x=button_width * 2, y=0, width=button_width, height=button_height)
-        # button_data.bind("<Enter>", on_enter)
-        # button_data.bind("<Leave>", on_leave)
+        button_robot_cmd.place(x=button_width * 2, y=0, width=button_width, height=button_height)
     
     def CreatePages(self):
         '''创建页面'''
         self.page_main.CreatePage()
         self.page_debug.CreatePage()
-        self.page_robot_state.CreatePage()
+        self.page_robot_cmd.CreatePage()
         self.page_main.place(x=0, y=30, width=self.width, height=self.height-30)
         self.page_debug.place(x=0, y=30, width=self.width, height=self.height-30)
-        self.page_robot_state.place(x=0, y=30, width=self.width, height=self.height-30)
-        
+        self.page_robot_cmd.place(x=0, y=30, width=self.width, height=self.height-30)
+
 

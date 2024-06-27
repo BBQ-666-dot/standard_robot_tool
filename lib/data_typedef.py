@@ -7,7 +7,7 @@
 class Imu_Data():
     def __init__(self) -> None:
         self.latest = {
-            "time_stamp":[], # 时间戳(s)
+            "time_stamp":0, # 时间戳(s)
             
             "yaw":0,   # 偏航角(rad)
             "pitch":0, # 俯仰角(rad)
@@ -71,4 +71,16 @@ class Imu_Data():
         self.storage["roll_vel"].clear()
         
         
-
+class Debug_Data():
+    def __init__(self) -> None:
+        self.latest = {
+            "time_stamp":0, # 时间戳(s)
+            
+            "datas":{}, # 数据
+        }
+        
+        self.storage = {
+            "time_stamp":[],
+            
+            "data":{},
+        }
