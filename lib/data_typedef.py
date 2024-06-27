@@ -30,15 +30,16 @@ class Imu_Data():
             "roll_vel":[],
         }
         self.length = len(self.storage['time_stamp'])
+        return
 
-############################################################
-#  基本功能
-#  update 更新数据
-#  clear 清空数据
-#  limit 限制数据长度
-############################################################
+    ############################################################
+    #  基本功能
+    #  update 更新数据
+    #  clear 清空数据
+    #  limit 限制数据长度
+    ############################################################
 
-    def update(self,data:dict):
+    def update(self,data:dict) -> None:
         self.latest = data.copy()
         
         self.storage['time_stamp'].append(data['time_stamp'])
@@ -52,8 +53,9 @@ class Imu_Data():
         self.storage['roll_vel'].append(data['roll_vel'])
         
         self.length = len(self.storage['time_stamp'])
+        return
     
-    def clear(self):
+    def clear(self) -> None:
         self.latest = {
             "yaw":0,
             "pitch":0,
@@ -64,42 +66,71 @@ class Imu_Data():
             "roll_vel":0,
         }
         
-        self.storage['time_stamp'].clear()
-
-        self.storage["yaw"].clear()
-        self.storage["pitch"].clear()
-        self.storage["roll"].clear()
-        
-        self.storage["yaw_vel"].clear()
-        self.storage["pitch_vel"].clear()
-        self.storage["roll_vel"].clear()
+        for key in self.storage:
+            self.storage[key].clear()
         
         self.length = len(self.storage['time_stamp'])
+        return
     
-    def limit(self,length:int):
+    def limit(self,length:int) -> None:
         if self.length <= length:
             return
-        self.storage['time_stamp'] = self.storage['time_stamp'][-length:]
-        
-        self.storage['yaw'] = self.storage['yaw'][-length:]
-        self.storage['pitch'] = self.storage['pitch'][-length:]
-        self.storage['roll'] = self.storage['roll'][-length:]
-        
-        self.storage['yaw_vel'] = self.storage['yaw_vel'][-length:]
-        self.storage['pitch_vel'] = self.storage['pitch_vel'][-length:]
-        self.storage['roll_vel'] = self.storage['roll_vel'][-length:]
+
+        for key in self.storage:
+            self.storage[key] = self.storage[key][-length:]
+        return
         
         
 class Debug_Data():
     def __init__(self) -> None:
         self.latest = {
             "time_stamp":0, # 时间戳(s)
-            
             "datas":{}, # 数据
         }
         
         self.storage = {
             "time_stamp":[],
-            
             "data":{},
         }
+        return
+    
+    ############################################################
+    #  基本功能
+    #  update 更新数据
+    #  clear 清空数据
+    #  limit 限制数据长度
+    ############################################################
+
+    def update(self,data:dict) -> None:
+        self.latest = data.copy()
+        for key in data['datas']:
+            if key not in self.storage['data']:
+                self.storage['data'][key] = []
+            self.storage['data'][key].append(data['datas'][key])
+        return
+
+    def clear(self) -> None:
+        self.latest = {
+            "time_stamp":0, # 时间戳(s)
+            
+            "datas":{}, # 数据
+        }
+        
+        self.storage["time_stamp"].clear()
+
+        self.storage["data"] = {}
+
+        self.length = len(self.storage['time_stamp'])
+        return
+
+    def limit(self,length:int) -> None:
+        if self.length <= length:
+            return
+        self.storage['time_stamp'] = self.storage['time_stamp'][-length:]
+        
+        for key in self.storage['datas']:
+            self.storage['data'][key] = self.storage['data'][key][-length:]
+        return
+
+
+
