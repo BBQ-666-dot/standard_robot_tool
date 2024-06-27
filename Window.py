@@ -39,18 +39,18 @@ class Window():
         self.page_main = Page_Main(self.window,
                                    usb=self.usb, 
                                    operations=self.operations)
-        self.page_debug = Page_Debug(self.window)
+        self.page_debug = Page_Debug(self.window,self.data_process)
         self.page_robot_cmd = Page_Robot_Cmd(self.window)
     
     def BlankFunction(self):
         '''空函数，用于占位'''
         pass
-############################################################
-#  主要功能
-#  InitApp 初始化程序
-#  RunApp 运行程序
-#  QuitApp 退出程序
-############################################################
+    ############################################################
+    #  主要功能
+    #  InitApp 初始化程序
+    #  RunApp 运行程序
+    #  QuitApp 退出程序
+    ############################################################
     def InitApp(self, width:int, height:int):
         '''初始化程序'''
         self.height = height
@@ -71,10 +71,10 @@ class Window():
     #             self.serial_data_read_module.CloseSerialPort()
     #         sys.exit(0)
 
-############################################################
-#  切换界面
-#  SwitchPage 切换界面
-############################################################
+    ############################################################
+    #  切换界面
+    #  SwitchPage 切换界面
+    ############################################################
     
     def SwitchPage(self, page_id:int):
         if page_id == self.page_main.id:
@@ -88,12 +88,12 @@ class Window():
             self.page_robot_cmd.lift()
 
 
-############################################################
-#  界面创建
-#  InitUI 初始化UI
-#  CreateMenu 创建菜单栏
-#  CreatePages 创建页面
-############################################################
+    ############################################################
+    #  界面创建
+    #  InitUI 初始化UI
+    #  CreateMenu 创建菜单栏
+    #  CreatePages 创建页面
+    ############################################################
     
     def InitUI(self):
         '''初始化UI'''
