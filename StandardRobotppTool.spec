@@ -37,6 +37,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='D:/PolarBear/#Software_Development/Serial_Port_Assistant/StandardRobotppTool.ico',  # 添加这行
 )
 coll = COLLECT(
     exe,
