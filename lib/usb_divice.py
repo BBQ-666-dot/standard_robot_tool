@@ -26,6 +26,7 @@ class USB_Device:
     
     def open(self) -> bool:
         if(self.ser.isOpen()):
+            self.is_open = True
             LogWarning("USB已经打开！")
             LogError("USB打开失败！")
             return False
@@ -82,9 +83,19 @@ class USB_Device:
         return True
     
     def buf_is_empty(self) -> bool:
-        if self.ser.in_waiting == 0:
-            return True
-        else:
+        if not self.is_open:
+            LogError("USB未打开！")
+            return False
+
+        try:
+            if self.ser.in_waiting == 0:
+                return True
+            else:
+                return False
+        except:
+            self.ser.close()
+            self.is_open = False
+            LogError("USB缓存区查询失败！")
             return False
     
     def clear_rx_buf(self):
@@ -101,7 +112,17 @@ class USB_Device:
 ############################################################
     
     def read(self, size:int) -> bytes:
-        data = self.ser.read(size)
+        if not self.is_open:
+            LogError("USB未打开！")
+            return b''
+        
+        try:
+            data = self.ser.read(size)
+        except:
+            self.ser.close()
+            LogError("USB读取数据失败！")
+            self.is_open = False
+            return b''
         return data
 
 

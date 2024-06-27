@@ -38,6 +38,8 @@ def VerifyCRC8(raw_data: bytes) -> bool:
     '''
     raw_data: 接收到的数据(包含CRC8校验码)
     '''
+    if len(raw_data)<1:
+        return False
     CRC8_calc = GetCRC8(raw_data[:-1])
     CRC8_recv = raw_data[-1]
     return CRC8_calc == CRC8_recv
@@ -84,6 +86,8 @@ def VerifyCRC16(raw_data: bytes) -> bool:
     '''
     raw_data_list: 接收到的数据(包含CRC16校验码)
     '''
+    if len(raw_data)<2:
+        return False
     CRC16_calc = GetCRC16(raw_data[:-2])
     CRC16_recv = struct.unpack('<H', raw_data[-2:])[0]  # '<H'表示小端模式的无符号短整型
     return CRC16_calc == CRC16_recv
