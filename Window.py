@@ -36,7 +36,9 @@ class Window():
         self.height = 0
         self.width = 0
         
-        self.page_main = Page_Main(self.window)
+        self.page_main = Page_Main(self.window,
+                                   usb=self.usb, 
+                                   operations=self.operations)
         self.page_debug = Page_Debug(self.window)
         self.page_robot_cmd = Page_Robot_Cmd(self.window)
     
@@ -134,11 +136,14 @@ class Window():
     
     def CreatePages(self):
         '''创建页面'''
-        self.page_main.CreatePage()
+        page_width = self.width
+        page_height = self.height - 30
+        
+        self.page_main.CreatePage(page_width, page_height)
         self.page_debug.CreatePage()
         self.page_robot_cmd.CreatePage()
-        self.page_main.place(x=0, y=30, width=self.width, height=self.height-30)
-        self.page_debug.place(x=0, y=30, width=self.width, height=self.height-30)
-        self.page_robot_cmd.place(x=0, y=30, width=self.width, height=self.height-30)
+        self.page_main.place(x=0, y=30, width=page_width, height=page_height)
+        self.page_debug.place(x=0, y=30, width=page_width, height=page_height)
+        self.page_robot_cmd.place(x=0, y=30, width=page_width, height=page_height)
 
 
