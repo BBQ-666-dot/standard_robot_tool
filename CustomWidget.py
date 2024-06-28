@@ -1,10 +1,5 @@
 
 import tkinter as tk
-import tkinter.ttk
-import tkinter.messagebox
-from PIL import Image
-import serial.tools.list_ports
-import datetime as dt
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
@@ -12,38 +7,6 @@ import numpy as np
 from lib.matplotlib_for_tk import RealTimePlot_2D, RealTimeGraph_3D
 from lib.log_info import LogError , LogInfo , LogWarning
 
-
-# class WaveFormCanavas(FigureCanvasTkAgg):
-#     '''波形图画布'''
-#     def __init__(self, master=None, width=5, height=4, dpi=100):
-#         self.fig = plt.figure(figsize=(width, height), dpi=dpi)
-#         self.ax = self.fig.add_subplot(111)
-#         self.ax.set_xlabel('time(s)')
-#         self.ax.set_ylabel('data')
-#         self.ax.set_title('Waveform')
-#         self.x = []
-#         self.y = []
-#         self.plot, = self.ax.plot(self.x, self.y)
-#         self.ax.grid()
-#         self.ax.set_xlim(0, 10)
-#         self.ax.set_ylim(-1, 1)
-#         self.ax.set_autoscale_on(False)
-#         self.ax.set_xticks(np.linspace(0, 10, 11))
-#         self.ax.set_yticks(np.linspace(-1, 1, 11))
-#         self.ax.set_xticklabels(np.linspace(0, 10, 11))
-#         self.ax.set_yticklabels(np.linspace(-1, 1, 11))
-#         self.ax.tick_params(labelsize=8)
-#         self.ax.legend()
-#         self.ax.grid(True)
-#         super().__init__(self.fig, master=master)
-#         self.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-#     def plot(self, x, y):
-#         self.x.append(x)
-#         self.y.append(y)
-#         self.plot.set_data(self.x, self.y)
-#         self.ax.set_xlim(self.x[0], self.x[-1])
-#         self.draw()
 
 # 旋转矩阵（绕X轴旋转theta角度）
 def rotate_x(points, theta):

@@ -15,8 +15,6 @@ from TASK_Monitor import TASK_Monitor
 from TASK_Test import TASK_Test
 
 import threading
-import queue
-import time
 
 LogInfo("开始运行 StandardRobot++ 上位机")
 

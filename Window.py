@@ -5,15 +5,7 @@
 import tkinter as tk
 import tkinter.ttk
 import tkinter.messagebox
-from tkinter import font
 
-from PIL import Image
-import serial.tools.list_ports
-import datetime as dt
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import numpy as np
-import sys
 import time
 
 from lib.log_info import LogError , LogInfo , LogWarning

@@ -3,7 +3,6 @@
 '''
 
 from log_info import LogError , LogInfo , LogWarning
-import CRC8_CRC16 as crc
 import struct
 from data_typedef import Imu_Data,Debug_Data
 

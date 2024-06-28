@@ -1,13 +1,6 @@
-import serial
-import struct
 import matplotlib
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import matplotlib.axes as maxes
-# plt.rcParams['font.family'] = ['SimHei']  # replace with your installed Chinese font
-import numpy as np
-import os
-import sys
 
 
 class RealTimePlot_2D():
