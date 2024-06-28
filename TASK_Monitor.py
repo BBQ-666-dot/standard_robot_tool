@@ -8,18 +8,16 @@ from lib.data_procecss import Data_Process
 import time
 from OperationTypedef import STOP_APP,ERROR
 
+tasks = ["TASK_UsbDevice","TASK_Monitor"]
 
 def TASK_Monitor(usb:USB_Device, data_process:Data_Process, oprations:list, run_time:dict):
-    LogInfo("开始运行 StandardRobot++ 上位机的监测模块")
-    
     start_time = int(time.time() * 1000)
-    start_time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + f".{int(time.time() % 1 * 1000):03d}"
-    LogInfo(f"Start time str: {start_time_str}")
-    LogInfo(f"Start time: {start_time}")
+    run_time['TASK_Monitor'] = start_time
+    LogInfo(f"[{start_time}(ms)]开始运行 StandardRobot++ 上位机的监测模块")
 
     while True:
         #处理操作
-        if len(oprations)>0 and oprations[0] == STOP_APP:
+        if len(oprations)>0 and (oprations[0] == STOP_APP or (ERROR in oprations)):
             break #stop app
         
         data_process.imu_data.limit(500)
@@ -28,12 +26,16 @@ def TASK_Monitor(usb:USB_Device, data_process:Data_Process, oprations:list, run_
         LogInfo(f"storage_len:{len(data_process.imu_data.storage['time_stamp'])}")
         LogInfo(f"oprations:{oprations}")
         
-        current_time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + f".{int(time.time() % 1 * 1000):03d}"
         current_time = int(time.time() * 1000)
-        LogInfo(f"Current time str: {current_time_str}")
-        LogInfo(f"Current time: {current_time}")
-        LogWarning(f"Time interval: {current_time - start_time}")
-
+        run_time['TASK_Monitor'] = current_time
+        for key in tasks:
+            task_run_time = run_time.get(key,0)
+            delta_time = current_time - task_run_time
+            if delta_time < 1500:
+                LogInfo(f"[{start_time}(ms)] {key} 运行正常")
+            else:
+                LogWarning(f"[{start_time}(ms)] {key} 运行异常")
+                oprations.append(ERROR)
         
         time.sleep(1)
     

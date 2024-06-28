@@ -25,7 +25,7 @@ operation_list = []
 run_time = {}
 
 
-usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list))
+usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list, run_time))
 usb_divice_task_thread.start()
 
 monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list, run_time))
