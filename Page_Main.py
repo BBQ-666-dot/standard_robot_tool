@@ -136,7 +136,7 @@ class Page_Main(tk.Frame):
 
         # IMU姿态信息
         self.pos_graph_model = PostureGraphModel(self)
-        self.pos_graph_model.place(x=20 + width*0.3, y=10, width=250, height=250)
+        self.pos_graph_model.place(x=20 + width*0.3, y=10, width=400, height=400)
         return
     
     ############################################################

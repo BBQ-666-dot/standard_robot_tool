@@ -30,7 +30,7 @@ usb_divice_task_thread.start()
 monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list, run_time))
 monitor_task_thread.start()
 
-if True:
+if False:
     test_task_thread = threading.Thread(target=TASK_Test, args=(usb, data_process, operation_list, run_time))
     test_task_thread.start()
 
