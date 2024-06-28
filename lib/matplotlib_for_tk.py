@@ -37,49 +37,42 @@ class RealTimePlot_2D():
 
 
 
-class RealTimePlot_3D:
-    def __init__(self, ax):
+class RealTimeGraph_3D:
+    def __init__(self, ax:maxes.Axes):
         self.ax = ax
-        
-        self.ax._button_pressed = False
-        self.ax._button_press_event = None
-        self.ax._dragging = False
-        self.ax._drag_start = (0, 0)
-        
-        self.ax.view_init(elev=30, azim=30)
-        self.ax.dist = 10
     
-    def update_plot(self):
-        x = np.random.rand(10)
-        y = np.random.rand(10)
-        z = np.random.rand(10)
-        
+    def UpdatePlot(self, ax_rotated:dict) -> None:
         self.ax.cla()
-        self.ax.scatter(x, y, z)
-    
-    def on_button_press(self, event):
-        if event.button == 1:
-            self.ax._button_pressed = True
-            self.ax._button_press_event = event
-        elif event.button == 3:
-            self.ax._dragging = True
-            self.ax._drag_start = (event.x, event.y)
-    
-    def on_button_release(self, event):
-        if event.button == 1:
-            self.ax._button_pressed = False
-        elif event.button == 3:
-            self.ax._dragging = False
-    
-    def on_mouse_move(self, event):
-        if self.ax._button_pressed:
-            dx = event.x - self.ax._button_press_event.x
-            dy = event.y - self.ax._button_press_event.y
-            self.ax.view_init(elev=self.ax.elev - dy, azim=self.ax.azim + dx)
-        elif self.ax._dragging:
-            dx = event.x - self.ax._drag_start[0]
-            dy = event.y - self.ax._drag_start[1]
-            self.ax._drag_start = (event.x, event.y)
-            self.ax.azim -= dx * 0.3
+        # 绘制初始姿态方向轴
+        self.ax.quiver(0, 0, 0, 1, 0, 0, color='r', length=1, normalize=True, alpha=0.5)  # X轴
+        self.ax.quiver(0, 0, 0, 0, 1, 0, color='g', length=1, normalize=True, alpha=0.5)  # Y轴
+        self.ax.quiver(0, 0, 0, 0, 0, 1, color='b', length=1, normalize=True, alpha=0.5)  # Z轴
         
-        plt.draw()
+        # 绘制姿态方向轴
+        x_rotated = ax_rotated['x']
+        y_rotated = ax_rotated['y']
+        z_rotated = ax_rotated['z']
+        self.ax.quiver(0, 0, 0, x_rotated[0], x_rotated[1], x_rotated[2], color='r', length=1.5, normalize=True)  # X轴
+        self.ax.quiver(0, 0, 0, y_rotated[0], y_rotated[1], y_rotated[2], color='g', length=1.5, normalize=True)  # Y轴
+        self.ax.quiver(0, 0, 0, z_rotated[0], z_rotated[1], z_rotated[2], color='b', length=1.5, normalize=True)  # Z轴
+        
+        # # 绘制初始姿态方向轴
+        # self.ax.plot([0, 1], [0, 0], [0, 0], color='r', alpha=0.5)  # X轴
+        # self.ax.plot([0, 0], [0, 1], [0, 0], color='g', alpha=0.5)  # Y轴
+        # self.ax.plot([0, 0], [0, 0], [0, 1], color='b', alpha=0.5)  # Z轴
+        
+        # # 绘制姿态方向轴
+        # x_rotated = ax_rotated['x']
+        # y_rotated = ax_rotated['y']
+        # z_rotated = ax_rotated['z']
+        # self.ax.plot([0, x_rotated[0]], [0, x_rotated[1]], [0, x_rotated[2]], color='r')  # X轴
+        # self.ax.plot([0, y_rotated[0]], [0, y_rotated[1]], [0, y_rotated[2]], color='g')  # Y轴
+        # self.ax.plot([0, z_rotated[0]], [0, z_rotated[1]], [0, z_rotated[2]], color='b')  # Z轴
+        
+        # 设置坐标轴范围
+        self.ax.set_xlim([-1, 1])
+        self.ax.set_ylim([-1, 1])
+        self.ax.set_zlim([-1, 1])
+        
+        self.ax.set_title("IMU Pos", fontsize=10)  # 添加标题
+        

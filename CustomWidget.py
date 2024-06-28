@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 
-from lib.matplotlib_for_tk import RealTimePlot_2D
+from lib.matplotlib_for_tk import RealTimePlot_2D, RealTimeGraph_3D
 from lib.log_info import LogError , LogInfo , LogWarning
 
 
@@ -44,6 +44,27 @@ from lib.log_info import LogError , LogInfo , LogWarning
 #         self.plot.set_data(self.x, self.y)
 #         self.ax.set_xlim(self.x[0], self.x[-1])
 #         self.draw()
+
+# 旋转矩阵（绕X轴旋转theta角度）
+def rotate_x(points, theta):
+    rotation_matrix = np.array([[1, 0, 0],
+                                [0, np.cos(theta), -np.sin(theta)],
+                                [0, np.sin(theta),  np.cos(theta)]])
+    return np.dot(points, rotation_matrix)
+
+# 旋转矩阵（绕Y轴旋转theta角度）
+def rotate_y(points, theta):
+    rotation_matrix = np.array([[np.cos(theta), 0, np.sin(theta)],
+                                [0, 1, 0],
+                                [-np.sin(theta), 0, np.cos(theta)]])
+    return np.dot(points, rotation_matrix)
+
+# 旋转矩阵（绕Z轴旋转theta角度）
+def rotate_z(points, theta):
+    rotation_matrix = np.array([[np.cos(theta), -np.sin(theta), 0],
+                                [np.sin(theta),  np.cos(theta), 0],
+                                [0, 0, 1]])
+    return np.dot(points, rotation_matrix)
 
 class PlotGraphModel(tk.Frame):
     '''曲线图绘制模块'''
@@ -88,6 +109,66 @@ class PlotGraphModel(tk.Frame):
             self.canvas.draw()
         return
 
+class PostureGraphModel(tk.Frame):
+    '''姿态图绘制模块'''
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.fig_3d = plt.figure(figsize=(10,6))#(15,7.5)
+        self.ax_3d = self.fig_3d.add_subplot(111, projection='3d')
+        self.graph_3d = RealTimeGraph_3D(self.ax_3d)
+        self.AddWidget()
+        return
+
+    def AddWidget(self):
+        self.canvas = FigureCanvasTkAgg(
+                        figure=self.fig_3d, 
+                        master=self
+                    )
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        self.UpdateGraph({"roll":0,"pitch":0,"yaw":0})
+        return
+    
+    ############################################################
+    #  主要功能
+    #  UpdateGraph 更新图像
+    ############################################################
+    def UpdateGraph(self,thetas:dict) -> None:
+        '''
+        更新图像
+        thetas: 旋转角度列表 roll pitch yaw
+        '''
+        
+        theta_x = thetas['roll']# 绕X轴旋转theta角度
+        theta_y = thetas['pitch']
+        theta_z = thetas['yaw']
+        
+        # 原始箭头方向向量
+        arrow_x = np.array([1, 0, 0])
+        arrow_y = np.array([0, 1, 0])
+        arrow_z = np.array([0, 0, 1])
+        
+        # 旋转箭头方向向量
+        rotated_arrow_x = rotate_x(arrow_x, theta_x)
+        rotated_arrow_x = rotate_y(rotated_arrow_x, theta_y)
+        rotated_arrow_x = rotate_z(rotated_arrow_x, theta_z)
+
+        rotated_arrow_y = rotate_x(arrow_y, theta_x)
+        rotated_arrow_y = rotate_y(rotated_arrow_y, theta_y)
+        rotated_arrow_y = rotate_z(rotated_arrow_y, theta_z)
+
+        rotated_arrow_z = rotate_x(arrow_z, theta_x)
+        rotated_arrow_z = rotate_y(rotated_arrow_z, theta_y)
+        rotated_arrow_z = rotate_z(rotated_arrow_z, theta_z)
+        
+        ax_rotate = {
+            "x":rotated_arrow_x,
+            "y":rotated_arrow_y,
+            "z":rotated_arrow_z
+        }
+        
+        self.graph_3d.UpdatePlot(ax_rotate)
+        self.canvas.draw()
+        return
 
 class DataNameModel(tk.Frame):
     '''数据名称列表'''
