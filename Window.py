@@ -38,6 +38,7 @@ class Window():
         
         self.page_main = Page_Main(self.window,
                                    usb=self.usb, 
+                                   data_process=self.data_process,
                                    operations=self.operations)
         self.page_debug = Page_Debug(self.window,self.data_process)
         self.page_robot_cmd = Page_Robot_Cmd(self.window)

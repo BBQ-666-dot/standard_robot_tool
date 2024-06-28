@@ -48,21 +48,21 @@ from lib.log_info import LogError , LogInfo , LogWarning
 # 旋转矩阵（绕X轴旋转theta角度）
 def rotate_x(points, theta):
     rotation_matrix = np.array([[1, 0, 0],
-                                [0, np.cos(theta), -np.sin(theta)],
-                                [0, np.sin(theta),  np.cos(theta)]])
+                                [0, np.cos(theta), np.sin(theta)],
+                                [0, -np.sin(theta),  np.cos(theta)]])
     return np.dot(points, rotation_matrix)
 
 # 旋转矩阵（绕Y轴旋转theta角度）
 def rotate_y(points, theta):
-    rotation_matrix = np.array([[np.cos(theta), 0, np.sin(theta)],
+    rotation_matrix = np.array([[np.cos(theta), 0, -np.sin(theta)],
                                 [0, 1, 0],
-                                [-np.sin(theta), 0, np.cos(theta)]])
+                                [np.sin(theta), 0, np.cos(theta)]])
     return np.dot(points, rotation_matrix)
 
 # 旋转矩阵（绕Z轴旋转theta角度）
 def rotate_z(points, theta):
-    rotation_matrix = np.array([[np.cos(theta), -np.sin(theta), 0],
-                                [np.sin(theta),  np.cos(theta), 0],
+    rotation_matrix = np.array([[np.cos(theta), np.sin(theta), 0],
+                                [-np.sin(theta),  np.cos(theta), 0],
                                 [0, 0, 1]])
     return np.dot(points, rotation_matrix)
 

@@ -3,7 +3,7 @@ from CustomWidget import DataNameModel,PlotGraphModel
 from lib.data_procecss import Data_Process
 
 class Page_Debug(tk.Frame):
-    def __init__(self, master,data_process:Data_Process, **kwargs) -> None:
+    def __init__(self, master, data_process:Data_Process, **kwargs) -> None:
         super().__init__(master, **kwargs)
         self.id = 2
         self.data_process = data_process
@@ -55,9 +55,6 @@ class Page_Debug(tk.Frame):
         return
     
     def UpdatePlot(self) -> None:
-        print(self.data_name_moodel.selected_names)
-        print(self.data_process.debug_data.latest['datas'])
-        print(self.data_process.debug_data.latest['time_stamp'])
         if self.is_ploting:
             y = []
             y_labels = []
