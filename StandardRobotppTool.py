@@ -31,13 +31,7 @@ usb_divice_task_thread.start()
 monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list, run_time))
 monitor_task_thread.start()
 
-window = Window(usb, data_process, operation_list)
-
-# usb.modify("COM6",9600,8,1,"N")
-# operation_list.append(OPEN_USB)
-# print(window.operations)
-
-
+window = Window(usb, data_process, operation_list, run_time)
 
 window.InitApp(width=800, height=500)
 window.RunApp()

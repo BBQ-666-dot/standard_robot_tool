@@ -27,10 +27,10 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list, ru
     usb.get()
     
     while True:
-        #处理操作
         current_time = int(time.time() * 1000)
         run_time['TASK_UsbDevice'] = current_time
         
+        #处理操作
         if len(oprations)>0:
             if oprations[0] == OPEN_USB:
                 usb.open()
