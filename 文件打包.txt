@@ -9,3 +9,6 @@ pyinstaller -F -w -i StandardRobotppTool.ico StandardRobotppTool.py
 
 使用.spec文件:
 pyinstaller StandardRobotppTool.spec
+
+启动虚拟环境
+.\scripts\activate

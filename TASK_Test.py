@@ -21,7 +21,7 @@ def TASK_Test(usb:USB_Device, data_process:Data_Process, oprations:list, run_tim
             break
         
         cnt += 1
-        if cnt == 1000:
+        if cnt == 200:
             oprations.append(ERROR)
         time.sleep(0.01)
     
