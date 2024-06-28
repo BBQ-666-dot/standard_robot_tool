@@ -22,12 +22,13 @@ LogInfo("开始运行 StandardRobot++ 上位机")
 usb = USB_Device()
 data_process = Data_Process()
 operation_list = []
+run_time = {}
 
 
 usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list))
 usb_divice_task_thread.start()
 
-monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list))
+monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list, run_time))
 monitor_task_thread.start()
 
 window = Window(usb, data_process, operation_list)
