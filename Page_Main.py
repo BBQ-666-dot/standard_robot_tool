@@ -3,6 +3,7 @@ import tkinter.ttk as ttk
 
 from lib.usb_divice import USB_Device
 from OperationTypedef import OPEN_USB, CLOSE_USB
+from CustomWidget import PostureGraphModel
 
 class SerialModel(tk.LabelFrame):
     def __init__(self, master, usb:USB_Device, operations:list, **kwargs):
@@ -21,6 +22,7 @@ class SerialModel(tk.LabelFrame):
         label_start_x = 10
         opration_start_x = 80
         
+        # 第1块：串口设置
         # 第1行：选择串口
         Label_Port = tk.Label(
                         self,
@@ -128,6 +130,11 @@ class Page_Main(tk.Frame):
                    usb = self.usb,
                    operations = self.operations
                    ).place(x=10,y=10,width=width*0.3,height=height*0.2)
+
+        # IMU姿态信息
+        self.pos_graph_model = PostureGraphModel(self)
+        self.pos_graph_model.place(x=20 + width*0.3, y=10, width=250, height=250)
+       
         
         
         
