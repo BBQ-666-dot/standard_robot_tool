@@ -12,46 +12,32 @@ from Window import Window
 from OperationTypedef import OPEN_USB,STOP_APP
 from TASK_UsbDevice import TASK_UsbDevice
 from TASK_Monitor import TASK_Monitor
+from TASK_Test import TASK_Test
 
 import threading
-import queue
-import time
 
 LogInfo("开始运行 StandardRobot++ 上位机")
 
 usb = USB_Device()
 data_process = Data_Process()
 operation_list = []
+run_time = {}
 
 
-usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list))
+usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list, run_time))
 usb_divice_task_thread.start()
 
-monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list))
+monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list, run_time))
 monitor_task_thread.start()
 
-window = Window(usb, data_process, operation_list)
+if False:
+    test_task_thread = threading.Thread(target=TASK_Test, args=(usb, data_process, operation_list, run_time))
+    test_task_thread.start()
 
-# usb.modify("COM6",9600,8,1,"N")
-# operation_list.append(OPEN_USB)
-# print(window.operations)
-
-
+window = Window(usb, data_process, operation_list, run_time)
 
 window.InitApp(width=800, height=500)
 window.RunApp()
 
 
-############################################################
-#  test
-############################################################
-usb.modify("COM6",9600,8,1,"N")
-operation_list.append(OPEN_USB)
-print(window.operations)
-
-# time.sleep(10)
-time.sleep(0.1)
-operation_list.append(STOP_APP)
-print(window.operations)
-
-# LogInfo("结束运行 StandardRobot++ 上位机")
+LogInfo("结束运行 StandardRobot++ 上位机")

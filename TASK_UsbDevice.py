@@ -4,29 +4,33 @@ StandardRobot++ 上位机的USB通信模块
 import AddLib
 AddLib.add_lib()
 
-from OperationTypedef import OPEN_USB,CLOSE_USB,STOP_APP
+from OperationTypedef import OPEN_USB,CLOSE_USB,STOP_APP,ERROR
 from lib.log_info import LogError , LogInfo , LogWarning
 from lib.usb_divice import USB_Device
 from lib.data_procecss import Data_Process
 import lib.CRC8_CRC16 as crc
 import threading
 import time
-import datetime
-import struct
 
-def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
+def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list, run_time:dict):
     '''
     usb: USB设备
     oprations: 操作列表
     '''
-    LogInfo("开始运行 StandardRobot++ 上位机的USB通信模块")
+    
+    start_time = int(time.time() * 1000)
+    run_time['TASK_UsbDevice'] = start_time
+    LogInfo(f"[{start_time}(ms)]开始运行 StandardRobot++ 上位机的USB通信模块")
     time.sleep(0.001)
+
     
     usb.get()
     
     while True:
+        current_time = int(time.time() * 1000)
+        run_time['TASK_UsbDevice'] = current_time
+        
         #处理操作
-        # print('oprations:',oprations)
         if len(oprations)>0:
             if oprations[0] == OPEN_USB:
                 usb.open()
@@ -34,7 +38,7 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list):
             elif oprations[0] == CLOSE_USB:
                 usb.close()
                 oprations.pop(0)
-            elif oprations[0] == STOP_APP:
+            elif oprations[0] == STOP_APP or (ERROR in oprations):
                 break #stop app
         
         if usb.is_open:

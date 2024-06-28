@@ -2,7 +2,9 @@ import tkinter as tk
 import tkinter.ttk as ttk
 
 from lib.usb_divice import USB_Device
+from lib.data_procecss import Data_Process
 from OperationTypedef import OPEN_USB, CLOSE_USB
+from CustomWidget import PostureGraphModel
 
 class SerialModel(tk.LabelFrame):
     def __init__(self, master, usb:USB_Device, operations:list, **kwargs):
@@ -21,6 +23,7 @@ class SerialModel(tk.LabelFrame):
         label_start_x = 10
         opration_start_x = 80
         
+        # 第1块：串口设置
         # 第1行：选择串口
         Label_Port = tk.Label(
                         self,
@@ -107,11 +110,13 @@ class SerialModel(tk.LabelFrame):
         
 
 class Page_Main(tk.Frame):
-    def __init__(self, master, usb:USB_Device, operations:list, **kwargs):
+    def __init__(self, master, usb:USB_Device, data_process:Data_Process, operations:list, **kwargs):
         super().__init__(master, **kwargs)
         self.id = 1
         self.operations = operations
+        self.data_process = data_process
         self.usb = usb
+        self.after(200, self.UpdateImuPos)# 200ms后更新IMU姿态信息
     
     def CreatePage(self,width:int,height:int):
         '''
@@ -128,7 +133,25 @@ class Page_Main(tk.Frame):
                    usb = self.usb,
                    operations = self.operations
                    ).place(x=10,y=10,width=width*0.3,height=height*0.2)
-        
+
+        # IMU姿态信息
+        self.pos_graph_model = PostureGraphModel(self)
+        self.pos_graph_model.place(x=20 + width*0.3, y=10, width=400, height=400)
+        return
+    
+    ############################################################
+    #  实时任务
+    #  UpdateImuPos 更新IMU姿态信息
+    ############################################################
+    
+    def UpdateImuPos(self):
+        thetas = {
+            "yaw": self.data_process.imu_data.latest['yaw'],
+            "pitch": self.data_process.imu_data.latest['pitch'],
+            "roll": self.data_process.imu_data.latest['roll']
+        }
+        self.pos_graph_model.UpdateGraph(thetas)
+        self.after(20, self.UpdateImuPos)# 20ms后更新IMU姿态信息
         
         
         
