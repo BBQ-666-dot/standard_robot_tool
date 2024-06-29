@@ -136,5 +136,47 @@ class Debug_Data():
         self.length = len(self.storage['time_stamp'])
         return
 
+class Robot_Info_Data():
+    def __init__(self) -> None:
+        self.clear()
+        return
+    ############################################################
+    #  基本功能
+    #  update 更新数据
+    #  clear 清空数据
+    ############################################################
+
+    def update(self,data:dict) -> None:
+        self.latest = data.copy()
+        return
+
+    def clear(self) -> None:
+        self.latest = {
+                'time_stamp': 0,
+                'types': {
+                        'chassis': '无底盘',
+                        'gimbal': '无云台',
+                        'shoot': '无发射机构',
+                        'arm': '无机械臂',
+                        'custom_controller': '无自定义控制器',
+                        },
+                'state': {
+                        'chassis':False,
+                        'gimbal':False,
+                        'shoot':False,
+                        'arm':False,
+                        'custom_controller':False,
+                        },
+                'speed_vector': {
+                        'vx': 0,
+                        'vy': 0,
+                        'wz': 0,
+                        },
+            }
+        return
+
+
+
+
 
 
