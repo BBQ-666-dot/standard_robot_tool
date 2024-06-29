@@ -98,22 +98,21 @@ class Data_Process():
             print('time_stamp =',time_stamp)
             
             types_raw = struct.unpack('<H', received_data[TYPES_OFFSET : TYPES_OFFSET+2])[0]
-            # chassis_id = types_raw>>13 & 0b111
-            # gimbal_id = (types_raw>>10) & 0b111
-            # shoot_id = (types_raw>>7) & 0b111
-            # arm_id = (types_raw>>4) & 0b111
-            # custom_controller_id = (types_raw>>1) & 0b111
-            chassis_id =           types_raw & 0b0000000000001110
-            gimbal_id =            types_raw & 0b0000000001110000
-            shoot_id =             types_raw & 0b0000001110000000
-            arm_id =               types_raw & 0b0001110000000000
-            custom_controller_id = types_raw & 0b1110000000000000
+            chassis_id =           (types_raw>>0 ) & 0b111
+            gimbal_id =            (types_raw>>3 ) & 0b111
+            shoot_id =             (types_raw>>6 ) & 0b111
+            arm_id =               (types_raw>>9 ) & 0b111
+            custom_controller_id = (types_raw>>12) & 0b111
             
-            print('chassis id =',chassis_id)
-            print('gimbal id =',gimbal_id)
-            print('shoot id =',shoot_id)
-            print('arm id =',arm_id)
+            print('chassis id =',(chassis_id))
+            print('gimbal id =',(gimbal_id))
+            print('shoot id =',(shoot_id))
+            print('arm id =',(arm_id))
             print('custom_controller id =',custom_controller_id)
+            print()
+            print('data_raw = ',bin(types_raw))
+            print()
+
             
             types = {
                 'chassis': chassis_names[chassis_id],
@@ -122,14 +121,21 @@ class Data_Process():
                 'arm': arm_names[arm_id],
                 'custom_controller': custom_controller_names[custom_controller_id],
             }
+            # types = {
+            #     'chassis': chassis_id,
+            #     'gimbal': gimbal_id,
+            #     'shoot': shoot_id,
+            #     'arm': arm_id,
+            #     'custom_controller': custom_controller_id,
+            # }
             
             state_raw = int(received_data[STATE_OFFSET])
             state = {
-                'chassis':           bool(state_raw & 0b00001000),
-                'gimbal':            bool(state_raw & 0b00010000),
-                'shoot':             bool(state_raw & 0b00100000),
-                'arm':               bool(state_raw & 0b01000000),
-                'custom_controller': bool(state_raw & 0b10000000),
+                'chassis':           bool((state_raw>>0 ) & 0b1),
+                'gimbal':            bool((state_raw>>1 ) & 0b1),
+                'shoot':             bool((state_raw>>2 ) & 0b1),
+                'arm':               bool((state_raw>>3 ) & 0b1),
+                'custom_controller': bool((state_raw>>4 ) & 0b1),
             }
             
             speed_vector = {
