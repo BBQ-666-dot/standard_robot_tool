@@ -107,7 +107,95 @@ class SerialModel(tk.LabelFrame):
             self.label_toggle_port['bg'] = 'red'
             self.button_toggle_Port['text'] = '打开端口'
         return
+
+class Robot_Info_Model(tk.LabelFrame):
+    def __init__(self, master, data_process:Data_Process, **kwargs):
+        super().__init__(master, **kwargs)
+        self.config(text='机器人信息')
+        self.data_process = data_process
+        self.AddWidget()
+        self.after(200, self.UpdateRobotInfo)# 200ms后更新机器人信息
+        return
+    
+    def AddWidget(self):
+        font = ('黑体', 12)
+        # 第0行：机器人信息
+        self.label_robot_run_time = tk.Label(
+                        self,
+                        text='设备运行时间：0s',
+                        font=('黑体', 12),
+                        anchor='w'
+                        )
+        self.label_robot_run_time.pack()
+
+        # 第1行：底盘信息
+        self.label_chassis = tk.Label(
+                        self,
+                        text='底盘:无底盘',
+                        font=font,
+                        anchor='w'
+                        )
+        self.label_chassis.pack()
         
+        # 第2行：云台信息
+        self.label_gimbal = tk.Label(
+                        self,
+                        text='云台:无云台',
+                        font=font,
+                        anchor='w'
+                        )
+        self.label_gimbal.pack()
+        
+        # 第3行：发射机构信息
+        self.label_shoot = tk.Label(
+                        self,
+                        text='发射机构:无发射机构',
+                        font=font,
+                        anchor='w'
+                        )
+        self.label_shoot.pack()
+        
+        # 第4行：机械臂信息
+        self.label_arm = tk.Label(
+                        self,
+                        text='机器人:无机器人',
+                        font=font,
+                        anchor='w'
+                        )
+        self.label_arm.pack()
+        
+        # 第5行：自定义控制器信息
+        self.label_custom_controller = tk.Label(
+                        self,
+                        text='自定义控制器:无自定义控制器',
+                        font=font,
+                        anchor='w'
+                        )
+        self.label_custom_controller.pack()
+        return
+
+    ############################################################
+    #  实时任务
+    #  UpdateRobotInfo 更新机器人信息
+    ############################################################
+
+    def UpdateRobotInfo(self):
+        chassis_names = ['无底盘','麦轮底盘','全向轮底盘','舵轮底盘','平衡底盘','']
+        gimbal_names = ['无云台','yaw-pitch电机直连云台','','','','','','','','']
+        shoot_names = ['无发射机构','摩擦轮+拨弹盘','气动+拨弹盘','','','','','','']
+        arm_names = ['无机械臂','企鹅mini机械臂','','','','','','','','','','','']
+        custom_controller_names = ['无自定义控制器','企鹅mini自定义控制器','','','']
+        
+        self.label_robot_run_time.config(text='设备运行时间：'+str(int(self.data_process.robot_info_data.latest['time_stamp'])/1000)+'s')
+        self.label_chassis.config(text='底盘:'+chassis_names[self.data_process.robot_info_data.latest['types']['chassis']])
+        self.label_gimbal.config(text='云台:'+gimbal_names[self.data_process.robot_info_data.latest['types']['gimbal']])
+        self.label_shoot.config(text='发射机构:'+shoot_names[self.data_process.robot_info_data.latest['types']['shoot']])
+        self.label_arm.config(text='机械臂:'+arm_names[self.data_process.robot_info_data.latest['types']['arm']])
+        self.label_custom_controller.config(text='自定义控制器:'+custom_controller_names[self.data_process.robot_info_data.latest['types']['custom_controller']])
+        
+        self.after(200, self.UpdateRobotInfo)# 200ms后更新机器人信息
+        return
+
 
 class Page_Main(tk.Frame):
     def __init__(self, master, usb:USB_Device, data_process:Data_Process, operations:list, **kwargs):
@@ -127,7 +215,6 @@ class Page_Main(tk.Frame):
         4. 串口的开关
         '''
         pass
-        # tk.Label(self, text='主页面').pack(pady=(50, 0))
         
         SerialModel(self,
                    usb = self.usb,
@@ -137,6 +224,11 @@ class Page_Main(tk.Frame):
         # IMU姿态信息
         self.pos_graph_model = PostureGraphModel(self)
         self.pos_graph_model.place(x=20 + width*0.3, y=10, width=400, height=400)
+        
+        # 机器人信息
+        Robot_Info_Model(self,
+                        data_process = self.data_process
+                        ).place(x=10, y=10+height*0.2, width=width*0.3, height=height*0.4)
         return
     
     ############################################################
