@@ -23,11 +23,19 @@ usb = USB_Device()
 data_process = Data_Process()
 operation_list = []
 run_time = {}
-input_listener = {}
 robot_cmd = {
-    'vx':0,
-    'vy':0,
-    'wz':0
+    'speed_vector':{
+        'vx':0,
+        'vy':0,
+        'wz':0
+    },
+    'chassis':{
+        'roll':0
+    },
+    'gimbal':{
+        'pitch':0,
+        'yaw':0
+    }
 }
 
 
@@ -45,7 +53,7 @@ monitor_task_thread.start()
 
 listen_task_thread = threading.Thread(
                             target=TASK_Listen, 
-                            args=(input_listener, operation_list, run_time, robot_cmd)
+                            args=(operation_list, run_time, robot_cmd)
                         )
 listen_task_thread.start()
 

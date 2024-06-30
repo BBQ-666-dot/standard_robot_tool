@@ -14,6 +14,8 @@ MAX_VX = 3
 MAX_VY = 3
 MAX_WZ = 3
 
+MAX_CHASSIS_ROLL = 0.3
+
 
 class Input_Listener():
     def __init__(self, input_listener:dict,oprations:list, run_time:dict,robot_cmd:dict):
@@ -59,16 +61,27 @@ class Input_Listener():
             return False
         try:
             if key.char == "w":
-                self.robot_cmd['vx'] = MAX_VX
+                self.robot_cmd['speed_vector']['vx'] = MAX_VX
             elif key.char == "s":
-                self.robot_cmd['vx'] = -MAX_VX
+                self.robot_cmd['speed_vector']['vx'] = -MAX_VX
             elif key.char == "a":
-                self.robot_cmd['vy'] = MAX_VY
+                self.robot_cmd['speed_vector']['vy'] = MAX_VY
             elif key.char == "d":
-                self.robot_cmd['vy'] = -MAX_VY
-            print(f'vx={self.robot_cmd["vx"]}')
-            print(f'vy={self.robot_cmd["vy"]}')
-            print(f'wz={self.robot_cmd["wz"]}')
+                self.robot_cmd['speed_vector']['vy'] = -MAX_VY
+            elif key.char == "q":
+                if self.robot_cmd['chassis']['roll'] < MAX_CHASSIS_ROLL-0.01:
+                    self.robot_cmd['chassis']['roll'] = MAX_CHASSIS_ROLL
+                else:
+                    self.robot_cmd['chassis']['roll'] = 0
+            elif key.char == "e":
+                if self.robot_cmd['chassis']['roll'] > -MAX_CHASSIS_ROLL+0.01:
+                    self.robot_cmd['chassis']['roll'] = -MAX_CHASSIS_ROLL
+                else:
+                    self.robot_cmd['chassis']['roll'] = 0
+                
+            print(f'vx={self.robot_cmd["speed_vector"]["vx"]}')
+            print(f'vy={self.robot_cmd["speed_vector"]["vy"]}')
+            print(f'wz={self.robot_cmd["speed_vector"]["wz"]}')
             print(f'按键 {key} 被按下')
         except AttributeError:
             print(f'特殊按键 {key} 被按下')
@@ -80,12 +93,12 @@ class Input_Listener():
         
         try:
             if key.char == "w" or key.char == "s":
-                self.robot_cmd['vx'] = 0
+                self.robot_cmd['speed_vector']['vx'] = 0
             elif key.char == "a" or key.char == "d":
-                self.robot_cmd['vy'] = 0
-            print(f'vx={self.robot_cmd["vx"]}')
-            print(f'vy={self.robot_cmd["vy"]}')
-            print(f'wz={self.robot_cmd["wz"]}')
+                self.robot_cmd['speed_vector']['vy'] = 0
+            print(f'vx={self.robot_cmd["speed_vector"]["vx"]}')
+            print(f'vy={self.robot_cmd["speed_vector"]["vy"]}')
+            print(f'wz={self.robot_cmd["speed_vector"]["wz"]}')
         except AttributeError:
             print(f'特殊按键 {key} 被按下')
 
@@ -121,7 +134,7 @@ def FeedDog(input_listener:Input_Listener,oprations:list,run_time:dict):
         run_time['TASK_Listen'] = int(time.time() * 1000)
         time.sleep(0.02)
 
-def TASK_Listen(input:dict,oprations:list, run_time:dict, robot_cmd:dict):
+def TASK_Listen(oprations:list, run_time:dict, robot_cmd:dict):
     LogInfo("开始运行 StandardRobot++ 上位机的输入模块")
     
     input_listener = Input_Listener(input,oprations, run_time, robot_cmd)
@@ -133,16 +146,24 @@ def TASK_Listen(input:dict,oprations:list, run_time:dict, robot_cmd:dict):
     LogInfo("结束运行 StandardRobot++ 上位机的输入模块")
     
 if __name__ == "__main__":
-    input_listener = {}
     oprations = []
     run_time = {}
     robot_cmd = {
-        'vx':0,
-        'vy':0,
-        'wz':0
+        'speed_vector':{
+            'vx':0,
+            'vy':0,
+            'wz':0
+        },
+        'chassis':{
+            'roll':0
+        },
+        'gimbal':{
+            'pitch':0,
+            'yaw':0
+        }
     }
 
-    listen_task_thread = threading.Thread(target=TASK_Listen, args=(input_listener,oprations,run_time,robot_cmd))
+    listen_task_thread = threading.Thread(target=TASK_Listen, args=(oprations,run_time,robot_cmd))
     listen_task_thread.start()
     
     time.sleep(1)
