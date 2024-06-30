@@ -10,12 +10,17 @@ import threading
 
 STOP = False
 
+MAX_VX = 3
+MAX_VY = 3
+MAX_WZ = 3
+
 
 class Input_Listener():
-    def __init__(self, input_listener:dict,oprations:list, run_time:dict):
+    def __init__(self, input_listener:dict,oprations:list, run_time:dict,robot_cmd:dict):
         self.input_listener = input_listener
         self.oprations = oprations
         self.run_time = run_time
+        self.robot_cmd = robot_cmd
         # 监听键盘
         self.keyboard_listener = keyboard.Listener(
             on_press=self.on_press,
@@ -52,24 +57,37 @@ class Input_Listener():
         if STOP_APP in self.oprations or ERROR in self.oprations:
             self.stop()
             return False
-
         try:
-            print(f'按键 {key.char} 被按下')
+            if key.char == "w":
+                self.robot_cmd['vx'] = MAX_VX
+            elif key.char == "s":
+                self.robot_cmd['vx'] = -MAX_VX
+            elif key.char == "a":
+                self.robot_cmd['vy'] = MAX_VY
+            elif key.char == "d":
+                self.robot_cmd['vy'] = -MAX_VY
+            print(f'vx={self.robot_cmd["vx"]}')
+            print(f'vy={self.robot_cmd["vy"]}')
+            print(f'wz={self.robot_cmd["wz"]}')
+            print(f'按键 {key} 被按下')
         except AttributeError:
             print(f'特殊按键 {key} 被按下')
-        # if key == keyboard.Key.esc:
-        #     # 按下Esc键停止监听
-        #     return False
 
     def on_release(self,key):
         if STOP_APP in self.oprations or ERROR in self.oprations:
             self.stop()
             return False
         
-        print(f'按键 {key} 被释放')
-        # if key == keyboard.Key.esc:
-        #     # 按下Esc键停止监听
-        #     return False
+        try:
+            if key.char == "w" or key.char == "s":
+                self.robot_cmd['vx'] = 0
+            elif key.char == "a" or key.char == "d":
+                self.robot_cmd['vy'] = 0
+            print(f'vx={self.robot_cmd["vx"]}')
+            print(f'vy={self.robot_cmd["vy"]}')
+            print(f'wz={self.robot_cmd["wz"]}')
+        except AttributeError:
+            print(f'特殊按键 {key} 被按下')
 
     def on_click(self,x, y, button, pressed):
         if STOP_APP in self.oprations or ERROR in self.oprations:
@@ -95,11 +113,21 @@ class Input_Listener():
         
         print(f'鼠标在 ({x}, {y}) 滚动了 {dx}, {dy}')
 
+def FeedDog(input_listener:Input_Listener,oprations:list,run_time:dict):
+    while True:
+        if len(oprations)>0 and (oprations[0] == STOP_APP or (ERROR in oprations)):
+            input_listener.stop()
+            break
+        run_time['TASK_Listen'] = int(time.time() * 1000)
+        time.sleep(0.02)
 
-def TASK_Listen(input_listener:dict,oprations:list, run_time:dict):
+def TASK_Listen(input:dict,oprations:list, run_time:dict, robot_cmd:dict):
     LogInfo("开始运行 StandardRobot++ 上位机的输入模块")
     
-    input_listener = Input_Listener(input_listener,oprations, run_time)
+    input_listener = Input_Listener(input,oprations, run_time, robot_cmd)
+    feed_dog_thread = threading.Thread(target=FeedDog, args=(input_listener,oprations,run_time))
+    
+    feed_dog_thread.start()
     input_listener.start()
 
     LogInfo("结束运行 StandardRobot++ 上位机的输入模块")
@@ -108,9 +136,14 @@ if __name__ == "__main__":
     input_listener = {}
     oprations = []
     run_time = {}
+    robot_cmd = {
+        'vx':0,
+        'vy':0,
+        'wz':0
+    }
 
-    listen_task_thread = threading.Thread(target=TASK_Listen, args=(input_listener,oprations,run_time))
+    listen_task_thread = threading.Thread(target=TASK_Listen, args=(input_listener,oprations,run_time,robot_cmd))
     listen_task_thread.start()
     
-    time.sleep(2)
+    time.sleep(1)
     oprations.append(STOP_APP)

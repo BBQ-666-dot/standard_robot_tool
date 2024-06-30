@@ -24,15 +24,29 @@ data_process = Data_Process()
 operation_list = []
 run_time = {}
 input_listener = {}
+robot_cmd = {
+    'vx':0,
+    'vy':0,
+    'wz':0
+}
 
 
-usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list, run_time))
+usb_divice_task_thread = threading.Thread(
+                            target=TASK_UsbDevice, 
+                            args=(usb, data_process, operation_list, run_time)
+                        )
 usb_divice_task_thread.start()
 
-monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list, run_time))
+monitor_task_thread = threading.Thread(
+                            target=TASK_Monitor, 
+                            args=(usb, data_process, operation_list, run_time)
+                        )
 monitor_task_thread.start()
 
-listen_task_thread = threading.Thread(target=TASK_Listen, args=(input_listener, operation_list, run_time))
+listen_task_thread = threading.Thread(
+                            target=TASK_Listen, 
+                            args=(input_listener, operation_list, run_time, robot_cmd)
+                        )
 listen_task_thread.start()
 
 if False:
