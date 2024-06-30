@@ -13,6 +13,7 @@ from OperationTypedef import OPEN_USB,STOP_APP
 from TASK_UsbDevice import TASK_UsbDevice
 from TASK_Monitor import TASK_Monitor
 from TASK_Test import TASK_Test
+from TASK_Listen import TASK_Listen
 
 import threading
 
@@ -22,6 +23,7 @@ usb = USB_Device()
 data_process = Data_Process()
 operation_list = []
 run_time = {}
+input_listener = {}
 
 
 usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list, run_time))
@@ -29,6 +31,9 @@ usb_divice_task_thread.start()
 
 monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list, run_time))
 monitor_task_thread.start()
+
+listen_task_thread = threading.Thread(target=TASK_Listen, args=(input_listener, operation_list, run_time))
+listen_task_thread.start()
 
 if False:
     test_task_thread = threading.Thread(target=TASK_Test, args=(usb, data_process, operation_list, run_time))
