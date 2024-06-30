@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import Canvas
+from pynput import keyboard, mouse
 # import pygame
 # from pygame.locals import *
 
@@ -7,9 +8,14 @@ class Control_Model(tk.LabelFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         self.config(text='机器人控制信息')
+        self.cmd = {
+            "vx":0,
+            "vy":0,
+            "wz":0
+        }
         self.AddWidget()
         return
-    
+
     def AddWidget(self):
         font = ('黑体', 12)
         
@@ -22,22 +28,6 @@ class Control_Model(tk.LabelFrame):
                 )
         label_vx.grid(row=0, column=0)
         
-        # entry_vx = tk.Entry(
-        #         self,
-        #         font=font,
-        #         width=10
-        #         )
-        # entry_vx.grid(row=0, column=1)
-        
-        # scale_vx = tk.Scale(
-        #         self,
-        #         from_=-100,
-        #         to=100,
-        #         orient='horizontal',
-        #         font=font
-        #         )
-        # scale_vx.grid(row=0, column=2)
-        
         # 第2行：vy
         label_vy = tk.Label(
                 self,
@@ -47,22 +37,6 @@ class Control_Model(tk.LabelFrame):
                 )
         label_vy.grid(row=1, column=0)
         
-        # entry_vy = tk.Entry(
-        #         self,
-        #         font=font,
-        #         width=10
-        #         )
-        # entry_vy.grid(row=1, column=1)
-        
-        # scale_vy = tk.Scale(
-        #         self,
-        #         from_=-100,
-        #         to=100,
-        #         orient='horizontal',
-        #         font=font
-        #         )
-        # scale_vy.grid(row=1, column=2)
-        
         # 第3行：wz
         label_wz = tk.Label(
                 self,
@@ -71,22 +45,6 @@ class Control_Model(tk.LabelFrame):
                 anchor='w'
                 )
         label_wz.grid(row=2, column=0)
-        
-        # entry_wz = tk.Entry(
-        #         self,
-        #         font=font,
-        #         width=10
-        #         )
-        # entry_wz.grid(row=2, column=1)
-        
-        # scale_wz = tk.Scale(
-        #         self,
-        #         from_=-100,
-        #         to=100,
-        #         orient='horizontal',
-        #         # font=font
-        #         )
-        # scale_wz.grid(row=2, column=2)
         return
 
 class Page_Robot_Cmd(tk.Frame):
