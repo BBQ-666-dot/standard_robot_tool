@@ -154,11 +154,11 @@ class Robot_Info_Data():
         self.latest = {
                 'time_stamp': 0,
                 'types': {
-                        'chassis': '无底盘',
-                        'gimbal': '无云台',
-                        'shoot': '无发射机构',
-                        'arm': '无机械臂',
-                        'custom_controller': '无自定义控制器',
+                        'chassis': 0,
+                        'gimbal': 0,
+                        'shoot': 0,
+                        'arm': 0,
+                        'custom_controller': 0,
                         },
                 'state': {
                         'chassis':False,

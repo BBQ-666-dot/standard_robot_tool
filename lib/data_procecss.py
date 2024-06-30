@@ -95,39 +95,15 @@ class Data_Process():
             custom_controller_names = ['无自定义控制器','企鹅mini自定义控制器']
             
             time_stamp = struct.unpack('<I', received_data[TIME_STAMP_OFFEST : TIME_STAMP_OFFEST+4])[0]
-            print('time_stamp =',time_stamp)
             
             types_raw = struct.unpack('<H', received_data[TYPES_OFFSET : TYPES_OFFSET+2])[0]
-            chassis_id =           (types_raw>>0 ) & 0b111
-            gimbal_id =            (types_raw>>3 ) & 0b111
-            shoot_id =             (types_raw>>6 ) & 0b111
-            arm_id =               (types_raw>>9 ) & 0b111
-            custom_controller_id = (types_raw>>12) & 0b111
-            
-            print('chassis id =',(chassis_id))
-            print('gimbal id =',(gimbal_id))
-            print('shoot id =',(shoot_id))
-            print('arm id =',(arm_id))
-            print('custom_controller id =',custom_controller_id)
-            print()
-            print('data_raw = ',bin(types_raw))
-            print()
-
-            
             types = {
-                'chassis': chassis_names[chassis_id],
-                'gimbal': gimbal_names[gimbal_id],
-                'shoot': shoot_names[shoot_id],
-                'arm': arm_names[arm_id],
-                'custom_controller': custom_controller_names[custom_controller_id],
+                'chassis':           (types_raw>>0 ) & 0b111,
+                'gimbal':            (types_raw>>3 ) & 0b111,
+                'shoot':             (types_raw>>6 ) & 0b111,
+                'arm':               (types_raw>>9 ) & 0b111,
+                'custom_controller': (types_raw>>12) & 0b111,
             }
-            # types = {
-            #     'chassis': chassis_id,
-            #     'gimbal': gimbal_id,
-            #     'shoot': shoot_id,
-            #     'arm': arm_id,
-            #     'custom_controller': custom_controller_id,
-            # }
             
             state_raw = int(received_data[STATE_OFFSET])
             state = {
@@ -151,6 +127,7 @@ class Data_Process():
                 'speed_vector': speed_vector,
             }
             self.robot_info_data.update(robot_info)
+            print(self.robot_info_data.latest)
         return 
 
     def send(self):
