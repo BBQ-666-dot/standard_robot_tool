@@ -61,7 +61,7 @@ if False:
     test_task_thread = threading.Thread(target=TASK_Test, args=(usb, data_process, operation_list, run_time))
     test_task_thread.start()
 
-window = Window(usb, data_process, operation_list, run_time)
+window = Window(usb, data_process, operation_list, run_time, robot_cmd)
 
 window.InitApp(width=800, height=500)
 window.RunApp()

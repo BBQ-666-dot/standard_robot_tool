@@ -5,53 +5,60 @@ from pynput import keyboard, mouse
 # from pygame.locals import *
 
 class Control_Model(tk.LabelFrame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, robot_cmd:dict, **kwargs):
         super().__init__(master, **kwargs)
         self.config(text='机器人控制信息')
-        self.cmd = {
-            "vx":0,
-            "vy":0,
-            "wz":0
-        }
+        self.robot_cmd = robot_cmd
         self.AddWidget()
+        self.after(10, self.Update) # 10ms后更新
         return
 
     def AddWidget(self):
         font = ('黑体', 12)
         
         # # 第1行：vx
-        label_vx = tk.Label(
+        self.label_vx = tk.Label(
                 self,
                 text='vx: 0 m/s',
                 font=font,
                 anchor='w'
                 )
-        label_vx.grid(row=0, column=0)
+        self.label_vx.grid(row=0, column=0)
         
         # 第2行：vy
-        label_vy = tk.Label(
+        self.label_vy = tk.Label(
                 self,
                 text='vy: 0 m/s',
                 font=font,
                 anchor='w'
                 )
-        label_vy.grid(row=1, column=0)
+        self.label_vy.grid(row=1, column=0)
         
         # 第3行：wz
-        label_wz = tk.Label(
+        self.label_wz = tk.Label(
                 self,
                 text='wz: 0 rad/s',
                 font=font,
                 anchor='w'
                 )
-        label_wz.grid(row=2, column=0)
+        self.label_wz.grid(row=2, column=0)
+        return
+    
+    def Update(self):
+        self.label_vx.config(text=f'vx: {self.robot_cmd["speed_vector"]["vx"]} m/s')
+        self.label_vy.config(text=f'vy: {self.robot_cmd["speed_vector"]["vy"]} m/s')
+        self.label_wz.config(text=f'wz: {self.robot_cmd["speed_vector"]["wz"]} rad/s')
+        self.after(10, self.Update) # 10ms后更新
         return
 
 class Page_Robot_Cmd(tk.Frame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, robot_cmd:dict, **kwargs):
         super().__init__(master, **kwargs)
         self.id = 3
         self.is_cmd = False
+        self.robot_cmd = robot_cmd
+        
+        self.control_model = Control_Model(self,self.robot_cmd)
         # pygame.init()
         # pygame.joystick.init()  # 初始化手柄支持
         # joystick_count = pygame.joystick.get_count()
@@ -64,7 +71,7 @@ class Page_Robot_Cmd(tk.Frame):
         return
     
     def CreatePage(self,width:int,height:int):
-        Control_Model(self).place(x=10, y=10, width=width-20, height=150)
+        self.control_model.place(x=10, y=10, width=width-20, height=150)
         return
     ############################################################
     #  实时任务
