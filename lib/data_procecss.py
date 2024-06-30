@@ -127,7 +127,7 @@ class Data_Process():
                 'speed_vector': speed_vector,
             }
             self.robot_info_data.update(robot_info)
-            print(self.robot_info_data.latest)
+            # print(self.robot_info_data.latest)
         return 
 
     def send(self):
