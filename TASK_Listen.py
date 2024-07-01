@@ -284,10 +284,15 @@ def FeedDog(input_listener:Input_Listener,oprations:list,run_time:dict):
 
 def ListenJoystick(joystick_listener:Joystick_Listener,oprations:list):
     joystick_listener.init_pygame()
+    cnt = 0
     while True:
         if len(oprations)>0 and (oprations[0] == STOP_APP or (ERROR in oprations)):
             break
-        joystick_listener.detect_joystick()
+        
+        if cnt % 50 == 0:
+            joystick_listener.detect_joystick()
+        cnt += 1
+        
         joystick_listener.update_joystick_data()
         time.sleep(0.01)
     return
