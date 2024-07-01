@@ -133,7 +133,7 @@ class USB_Device:
         
         try:
             self.ser.write(data)
-            LogInfo("USB发送数据成功！")
+            # LogInfo("USB发送数据成功！")
         except:
             self.ser.close()
             LogError("USB发送数据失败！")
