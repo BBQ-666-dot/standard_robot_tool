@@ -31,9 +31,9 @@ def TASK_UsbSend(usb:USB_Device, data_process:Data_Process, oprations:list, run_
             if usb.is_open:
                 data = data_process.send(SEND_ID_ROBOT_CMD)
                 usb.send(data)
-                print(data)
-                print(len(data))
-                print(current_time)
+                # print(data)
+                # print(len(data))
+                # print(current_time)
         
         time.sleep(0.001)
 
