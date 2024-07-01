@@ -4,7 +4,9 @@
 
 from log_info import LogError , LogInfo , LogWarning
 import struct
-from data_typedef import Imu_Data,Debug_Data,Robot_Info_Data
+from data_typedef import Imu_Data,Debug_Data,Robot_Info_Data,Robot_Cmd_Data
+from data_typedef import SEND_ID_ROBOT_CMD
+import lib.CRC8_CRC16 as crc
 
 TIME_STAMP_OFFEST = 4
 
@@ -19,15 +21,29 @@ ROLL_VEL_OFFEST = 28
 
 class Data_Process():
     def __init__(self) -> None:
+        # receive data
         self.imu_data = Imu_Data()
         self.debug_data = Debug_Data()
         self.robot_info_data = Robot_Info_Data()
+        
+        # send data
+        self.robot_cmd_data = Robot_Cmd_Data()
+        
+        self.send_data = False
         return 
+
+    def start_send(self):
+        self.send_data = True
+        return
+    
+    def stop_send(self):
+        self.send_data = False
+        return
 
 ############################################################
 #  数据处理基本功能
 #  receive 对接收到的数据进行处理并存储
-#  send
+#  send 发送数据
 #  clear 清空数据
 ############################################################
 
@@ -130,8 +146,17 @@ class Data_Process():
             # print(self.robot_info_data.latest)
         return 
 
-    def send(self):
-        pass
+    def send(self,send_id:int):
+        if not self.send_data:
+            return
+        if send_id == SEND_ID_ROBOT_CMD:
+            send_data = b'\x5a\x2a\x01' # sof + len + id
+            send_data = crc.AppendCRC8(send_data)
+            
+            print(send_data)
+            
+            # data = 
+            
         return 
     
     def clear(self):

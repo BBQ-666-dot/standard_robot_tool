@@ -4,6 +4,12 @@
 #         self.latest = {}
 #         self.
 
+# DATA_ID_DEBUG = 1
+# DATA_ID_IMU = 2
+# DATA_ID_ROBOT_INFO = 3
+
+SEND_ID_ROBOT_CMD = 1
+
 class Imu_Data():
     def __init__(self) -> None:
         self.latest = {
@@ -175,7 +181,45 @@ class Robot_Info_Data():
             }
         return
 
+class Robot_Cmd_Data():
+    def __init__(self) -> None:
+        self.clear()
+        return
+    ############################################################
+    #  基本功能
+    #  update 更新数据
+    #  clear 清空数据
+    ############################################################
 
+    def update(self,data:dict) -> None:
+        self.latest = data.copy()
+        return
+
+    def clear(self) -> None:
+        self.latest = {
+                'time_stamp': 0,
+                'speed_vector': {
+                        'vx': 0,
+                        'vy': 0,
+                        'wz': 0,
+                        },
+                'chassis': {
+                        'roll': 0,
+                        'yaw': 0,
+                        'pitch': 0,
+                        'leg_lenth': 0,
+                        },
+                'gimbal': {
+                        'yaw': 0,
+                        'pitch': 0,
+                        },
+                'shoot': {
+                        'fire': 0,
+                        'fric_on': 0,
+                        },
+            }
+        return
+    
 
 
 
