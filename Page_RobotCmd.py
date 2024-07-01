@@ -42,12 +42,34 @@ class Control_Model(tk.LabelFrame):
                 anchor='w'
                 )
         self.label_wz.grid(row=2, column=0)
+        
+        # 第4行：gimbal pitch
+        self.label_gimbal_pitch = tk.Label(
+                self,
+                text='gimbal_pitch: 0 rad',
+                font=font,
+                anchor='w'
+                )
+        self.label_gimbal_pitch.grid(row=3, column=0)
+        
+        # 第5行：gimbal yaw
+        self.label_gimbal_yaw = tk.Label(
+                self,
+                text='gimbal_yaw: 0 rad',
+                font=font,
+                anchor='w'
+                )
+        self.label_gimbal_yaw.grid(row=4, column=0)
         return
     
     def Update(self):
         self.label_vx.config(text=f'vx: {self.robot_cmd["speed_vector"]["vx"]} m/s')
         self.label_vy.config(text=f'vy: {self.robot_cmd["speed_vector"]["vy"]} m/s')
         self.label_wz.config(text=f'wz: {self.robot_cmd["speed_vector"]["wz"]} rad/s')
+        
+        self.label_gimbal_pitch.config(text=f'gimbal_pitch: {self.robot_cmd["gimbal"]["pitch"]:.4f} rad')
+        self.label_gimbal_yaw.config(text=f'gimbal_yaw: {self.robot_cmd["gimbal"]["yaw"]:.4f} rad')
+        
         self.after(10, self.Update) # 10ms后更新
         return
 

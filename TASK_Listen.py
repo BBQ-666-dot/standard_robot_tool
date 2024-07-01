@@ -7,6 +7,7 @@ from OperationTypedef import OPEN_USB,STOP_APP,ERROR
 from pynput import mouse, keyboard
 import time
 import threading
+import math
 
 STOP = False
 
@@ -23,6 +24,10 @@ class Input_Listener():
         self.oprations = oprations
         self.run_time = run_time
         self.robot_cmd = robot_cmd
+        
+        self.last_x = None
+        self.last_y = None
+        
         # 监听键盘
         self.keyboard_listener = keyboard.Listener(
             on_press=self.on_press,
@@ -33,6 +38,7 @@ class Input_Listener():
             on_click=self.on_click,
             on_move=self.on_move,
             on_scroll=self.on_scroll)
+        return
     
     def start(self):
         self.keyboard_listener.start()
@@ -117,7 +123,30 @@ class Input_Listener():
             self.stop()
             return False
         
-        print(f'鼠标移动到 ({x}, {y})')
+        if self.last_x is None or self.last_y is None:
+            self.last_x = x
+            self.last_y = y
+            return
+
+        # Calculate the distance moved
+        dx = x - self.last_x
+        dy = y - self.last_y
+        
+        # Update the last position
+        self.last_x = x
+        self.last_y = y
+        
+        self.robot_cmd["gimbal"]["yaw"] += dx * 0.01
+        if self.robot_cmd["gimbal"]["yaw"] > math.pi:
+            self.robot_cmd["gimbal"]["yaw"] -= 2*math.pi
+        elif self.robot_cmd["gimbal"]["yaw"] < -math.pi:
+            self.robot_cmd["gimbal"]["yaw"] += 2*math.pi
+        
+        self.robot_cmd["gimbal"]["pitch"] += dy * 0.01
+        if self.robot_cmd["gimbal"]["pitch"] > math.pi/2:
+            self.robot_cmd["gimbal"]["pitch"] = math.pi/2
+        elif self.robot_cmd["gimbal"]["pitch"] < -math.pi/2:
+            self.robot_cmd["gimbal"]["pitch"] = -math.pi/2
 
     def on_scroll(self,x, y, dx, dy):
         if STOP_APP in self.oprations or ERROR in self.oprations:
