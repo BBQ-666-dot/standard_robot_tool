@@ -27,7 +27,7 @@ class Window():
         
         self.window = tk.Tk()
         LogInfo("窗口已创建")
-        self.version = 'V3.0.3'
+        self.version = 'V3.0.5'
         LogInfo('版本已确认：' + self.version)
         self.height = 0
         self.width = 0

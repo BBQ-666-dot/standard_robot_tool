@@ -63,12 +63,12 @@ class Control_Model(tk.LabelFrame):
         return
     
     def Update(self):
-        self.label_vx.config(text=f'vx: {self.robot_cmd["speed_vector"]["vx"]} m/s')
-        self.label_vy.config(text=f'vy: {self.robot_cmd["speed_vector"]["vy"]} m/s')
-        self.label_wz.config(text=f'wz: {self.robot_cmd["speed_vector"]["wz"]} rad/s')
+        self.label_vx.config(text=f'vx: {self.robot_cmd["speed_vector"]["vx"]:.3f} m/s')
+        self.label_vy.config(text=f'vy: {self.robot_cmd["speed_vector"]["vy"]:.3f} m/s')
+        self.label_wz.config(text=f'wz: {self.robot_cmd["speed_vector"]["wz"]:.3f} rad/s')
         
-        self.label_gimbal_pitch.config(text=f'gimbal_pitch: {self.robot_cmd["gimbal"]["pitch"]:.4f} rad')
-        self.label_gimbal_yaw.config(text=f'gimbal_yaw: {self.robot_cmd["gimbal"]["yaw"]:.4f} rad')
+        self.label_gimbal_pitch.config(text=f'gimbal_pitch: {self.robot_cmd["gimbal"]["pitch"]:.3f} rad')
+        self.label_gimbal_yaw.config(text=f'gimbal_yaw: {self.robot_cmd["gimbal"]["yaw"]:.3f} rad')
         
         self.after(10, self.Update) # 10ms后更新
         return
