@@ -227,6 +227,12 @@ class Joystick_Listener():
 
     def detect_joystick(self):
         global use_cmd
+        
+        if self.joystick == None:
+            # 重新初始化pygame.joystick模块
+            pygame.joystick.quit()
+            pygame.joystick.init()
+
         joystick_count = pygame.joystick.get_count()
         if joystick_count > 0:
             if self.joystick == None:
