@@ -8,7 +8,12 @@ from lib.data_procecss import Data_Process
 import time
 from OperationTypedef import STOP_APP,ERROR
 
-tasks = ["TASK_UsbDevice","TASK_Monitor","TASK_Window"]
+tasks = ["TASK_UsbDevice",
+         "TASK_Monitor",
+         "TASK_Window",
+         "TASK_Listen",
+         "TASK_UsbSend",
+         ]
 
 def TASK_Monitor(usb:USB_Device, data_process:Data_Process, oprations:list, run_time:dict):
     start_time = int(time.time() * 1000)

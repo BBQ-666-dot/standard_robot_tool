@@ -13,6 +13,8 @@ from OperationTypedef import OPEN_USB,STOP_APP
 from TASK_UsbDevice import TASK_UsbDevice
 from TASK_Monitor import TASK_Monitor
 from TASK_Test import TASK_Test
+from TASK_Listen import TASK_Listen
+from TASK_UsbSend import TASK_UsbSend
 
 import threading
 
@@ -22,19 +24,59 @@ usb = USB_Device()
 data_process = Data_Process()
 operation_list = []
 run_time = {}
+robot_cmd = {
+                'time_stamp': 0,
+                'speed_vector': {
+                        'vx': 0,
+                        'vy': 0,
+                        'wz': 0,
+                        },
+                'chassis': {
+                        'roll': 0,
+                        'yaw': 0,
+                        'pitch': 0,
+                        'leg_length': 0,
+                        },
+                'gimbal': {
+                        'yaw': 0,
+                        'pitch': 0,
+                        },
+                'shoot': {
+                        'fire': 0,
+                        'fric_on': 0,
+                        },
+            }
 
 
-usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb, data_process, operation_list, run_time))
+usb_divice_task_thread = threading.Thread(
+                            target=TASK_UsbDevice, 
+                            args=(usb, data_process, operation_list, run_time)
+                        )
 usb_divice_task_thread.start()
 
-monitor_task_thread = threading.Thread(target=TASK_Monitor, args=(usb, data_process, operation_list, run_time))
+usb_send_task_thread = threading.Thread(
+                            target=TASK_UsbSend, 
+                            args=(usb,data_process,operation_list,run_time,robot_cmd)
+                        )
+usb_send_task_thread.start()
+
+monitor_task_thread = threading.Thread(
+                            target=TASK_Monitor, 
+                            args=(usb, data_process, operation_list, run_time)
+                        )
 monitor_task_thread.start()
+
+listen_task_thread = threading.Thread(
+                            target=TASK_Listen, 
+                            args=(operation_list, run_time, robot_cmd)
+                        )
+listen_task_thread.start()
 
 if False:
     test_task_thread = threading.Thread(target=TASK_Test, args=(usb, data_process, operation_list, run_time))
     test_task_thread.start()
 
-window = Window(usb, data_process, operation_list, run_time)
+window = Window(usb, data_process, operation_list, run_time, robot_cmd)
 
 window.InitApp(width=800, height=500)
 window.RunApp()

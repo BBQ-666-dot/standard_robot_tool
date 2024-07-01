@@ -44,6 +44,14 @@ def VerifyCRC8(raw_data: bytes) -> bool:
     CRC8_recv = raw_data[-1]
     return CRC8_calc == CRC8_recv
 
+def AppendCRC8(raw_data: bytes) -> bytes:
+    '''
+    raw_data: 需要添加CRC8校验码的数据
+    '''
+    CRC8_calc = GetCRC8(raw_data)
+    CRC8_byte = struct.pack('B', CRC8_calc)
+    return raw_data + CRC8_byte
+
 '''
 CRC16校验部分
 '''
@@ -91,3 +99,11 @@ def VerifyCRC16(raw_data: bytes) -> bool:
     CRC16_calc = GetCRC16(raw_data[:-2])
     CRC16_recv = struct.unpack('<H', raw_data[-2:])[0]  # '<H'表示小端模式的无符号短整型
     return CRC16_calc == CRC16_recv
+
+def AppendCRC16(raw_data: bytes) -> bytes:
+    '''
+    raw_data: 需要添加CRC16校验码的数据
+    '''
+    CRC16_calc = GetCRC16(raw_data)
+    CRC16_byte = struct.pack('<H', CRC16_calc)
+    return raw_data + CRC16_byte

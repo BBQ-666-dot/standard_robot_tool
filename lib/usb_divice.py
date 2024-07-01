@@ -109,6 +109,7 @@ class USB_Device:
 ############################################################
 #  串口数据收发
 #  read
+#  send
 ############################################################
     
     def read(self, size:int) -> bytes:
@@ -124,6 +125,21 @@ class USB_Device:
             self.is_open = False
             return b''
         return data
+    
+    def send(self, data:bytes) -> bool:
+        if not self.is_open:
+            LogError("USB未打开！")
+            return False
+        
+        try:
+            self.ser.write(data)
+            LogInfo("USB发送数据成功！")
+        except:
+            self.ser.close()
+            LogError("USB发送数据失败！")
+            self.is_open = False
+            return False
+        return True
 
 
 if __name__ == '__main__':

@@ -18,11 +18,12 @@ from Page_Debug import Page_Debug
 from Page_RobotCmd import Page_Robot_Cmd
 
 class Window():
-    def __init__(self, usb:USB_Device, data_process:Data_Process, operations:list, run_time:dict) -> None:
+    def __init__(self, usb:USB_Device, data_process:Data_Process, operations:list, run_time:dict, robot_cmd:dict) -> None:
         self.usb = usb
         self.data_process = data_process
         self.operations = operations
         self.run_time = run_time
+        self.robot_cmd = robot_cmd
         
         self.window = tk.Tk()
         LogInfo("窗口已创建")
@@ -36,7 +37,7 @@ class Window():
                                    data_process=self.data_process,
                                    operations=self.operations)
         self.page_debug = Page_Debug(self.window,self.data_process)
-        self.page_robot_cmd = Page_Robot_Cmd(self.window)
+        self.page_robot_cmd = Page_Robot_Cmd(self.window,self.robot_cmd)
         
         start_time = int(time.time() * 1000)
         self.run_time['TASK_Window'] = start_time
@@ -90,14 +91,14 @@ class Window():
     
     def SwitchPage(self, page_id:int):
         if page_id == self.page_main.id:
-            # return
             self.page_main.lift()
+            # self.data_process.stop_send()
         elif page_id == self.page_debug.id:
-            # return
             self.page_debug.lift()
+            # self.data_process.stop_send()
         elif page_id == self.page_robot_cmd.id:
-            # return
             self.page_robot_cmd.lift()
+            self.data_process.start_send()
 
 
     ############################################################
@@ -153,7 +154,7 @@ class Window():
         
         self.page_main.CreatePage(page_width, page_height)
         self.page_debug.CreatePage(page_width, page_height)
-        self.page_robot_cmd.CreatePage()
+        self.page_robot_cmd.CreatePage(page_width, page_height)
         self.page_main.place(x=0, y=30, width=page_width, height=page_height)
         self.page_debug.place(x=0, y=30, width=page_width, height=page_height)
         self.page_robot_cmd.place(x=0, y=30, width=page_width, height=page_height)

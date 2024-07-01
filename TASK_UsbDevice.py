@@ -44,6 +44,7 @@ def TASK_UsbDevice(usb:USB_Device, data_process:Data_Process, oprations:list, ru
         if usb.is_open:
             if usb.buf_is_empty():
                 time.sleep(0.001)
+                continue
             received_data = b''
             data = b''
             #读取帧头的第一个字节
@@ -73,13 +74,14 @@ if __name__ == '__main__':
     usb = USB_Device()
     data_process = Data_Process()
     oprations = []
+    run_time = {}
     
-    usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb,data_process,oprations))
+    usb_divice_task_thread = threading.Thread(target=TASK_UsbDevice, args=(usb,data_process,oprations,run_time))
     usb_divice_task_thread.start()
     
     usb.modify("COM6",9600,8,1,"N")
     oprations.append(OPEN_USB)
     
-    time.sleep(0.5)
+    time.sleep(3)
     oprations.append(STOP_APP)
 
