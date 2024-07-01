@@ -14,6 +14,7 @@ from TASK_UsbDevice import TASK_UsbDevice
 from TASK_Monitor import TASK_Monitor
 from TASK_Test import TASK_Test
 from TASK_Listen import TASK_Listen
+from TASK_UsbSend import TASK_UsbSend
 
 import threading
 
@@ -44,6 +45,9 @@ usb_divice_task_thread = threading.Thread(
                             args=(usb, data_process, operation_list, run_time)
                         )
 usb_divice_task_thread.start()
+
+# usb_send_task_thread = threading.Thread(target=TASK_UsbSend, args=(usb,data_process,operation_list,run_time))
+# usb_send_task_thread.start()
 
 monitor_task_thread = threading.Thread(
                             target=TASK_Monitor, 

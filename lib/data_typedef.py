@@ -207,7 +207,7 @@ class Robot_Cmd_Data():
                         'roll': 0,
                         'yaw': 0,
                         'pitch': 0,
-                        'leg_lenth': 0,
+                        'leg_length': 0,
                         },
                 'gimbal': {
                         'yaw': 0,

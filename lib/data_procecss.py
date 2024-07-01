@@ -29,15 +29,15 @@ class Data_Process():
         # send data
         self.robot_cmd_data = Robot_Cmd_Data()
         
-        self.send_data = False
+        self.sending_data = False
         return 
 
     def start_send(self):
-        self.send_data = True
+        self.sending_data = True
         return
     
     def stop_send(self):
-        self.send_data = False
+        self.sending_data = False
         return
 
 ############################################################
@@ -146,18 +146,57 @@ class Data_Process():
             # print(self.robot_info_data.latest)
         return 
 
-    def send(self,send_id:int):
-        if not self.send_data:
+    def send(self,send_id:int)->bytes:
+        if not self.sending_data:
             return
         if send_id == SEND_ID_ROBOT_CMD:
             send_data = b'\x5a\x2a\x01' # sof + len + id
             send_data = crc.AppendCRC8(send_data)
             
-            print(send_data)
+            # 添加时间戳
+            data = struct.pack('<I', self.robot_cmd_data.latest['time_stamp'])
+            send_data += data
+            # print(len(send_data))
             
-            # data = 
+            # 添加speed_vector数据
+            data = struct.pack('<f', self.robot_cmd_data.latest['speed_vector']['vx'])
+            send_data += data
+            data = struct.pack('<f', self.robot_cmd_data.latest['speed_vector']['vy'])
+            send_data += data
+            data = struct.pack('<f', self.robot_cmd_data.latest['speed_vector']['wz'])
+            send_data += data
+            # print(len(send_data))
             
-        return 
+            # 添加chassis数据
+            data = struct.pack('<f', self.robot_cmd_data.latest['chassis']['roll'])
+            send_data += data
+            data = struct.pack('<f', self.robot_cmd_data.latest['chassis']['pitch'])
+            send_data += data
+            data = struct.pack('<f', self.robot_cmd_data.latest['chassis']['yaw'])
+            send_data += data
+            data = struct.pack('<f', self.robot_cmd_data.latest['chassis']['leg_length'])
+            send_data += data
+            # print(len(send_data))
+            
+            # 添加gimbal数据
+            data = struct.pack('<f', self.robot_cmd_data.latest['gimbal']['pitch'])
+            send_data += data
+            data = struct.pack('<f', self.robot_cmd_data.latest['gimbal']['yaw'])
+            send_data += data
+            # print(len(send_data))
+            
+            #添加shoot数据
+            data = struct.pack('B', self.robot_cmd_data.latest['shoot']['fire'])
+            send_data += data
+            data = struct.pack('B', self.robot_cmd_data.latest['shoot']['fric_on'])
+            send_data += data
+            # print(len(send_data))
+            
+            #添加crc16校验
+            send_data = crc.AppendCRC16(send_data)
+            # print(len(send_data))
+            
+        return send_data
     
     def clear(self):
         self.imu_data.clear()
