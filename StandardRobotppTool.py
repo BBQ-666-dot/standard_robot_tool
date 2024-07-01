@@ -25,19 +25,27 @@ data_process = Data_Process()
 operation_list = []
 run_time = {}
 robot_cmd = {
-    'speed_vector':{
-        'vx':0,
-        'vy':0,
-        'wz':0
-    },
-    'chassis':{
-        'roll':0
-    },
-    'gimbal':{
-        'pitch':0,
-        'yaw':0
-    }
-}
+                'time_stamp': 0,
+                'speed_vector': {
+                        'vx': 0,
+                        'vy': 0,
+                        'wz': 0,
+                        },
+                'chassis': {
+                        'roll': 0,
+                        'yaw': 0,
+                        'pitch': 0,
+                        'leg_length': 0,
+                        },
+                'gimbal': {
+                        'yaw': 0,
+                        'pitch': 0,
+                        },
+                'shoot': {
+                        'fire': 0,
+                        'fric_on': 0,
+                        },
+            }
 
 
 usb_divice_task_thread = threading.Thread(
@@ -46,8 +54,11 @@ usb_divice_task_thread = threading.Thread(
                         )
 usb_divice_task_thread.start()
 
-# usb_send_task_thread = threading.Thread(target=TASK_UsbSend, args=(usb,data_process,operation_list,run_time))
-# usb_send_task_thread.start()
+usb_send_task_thread = threading.Thread(
+                            target=TASK_UsbSend, 
+                            args=(usb,data_process,operation_list,run_time,robot_cmd)
+                        )
+usb_send_task_thread.start()
 
 monitor_task_thread = threading.Thread(
                             target=TASK_Monitor, 

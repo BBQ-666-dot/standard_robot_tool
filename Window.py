@@ -91,14 +91,14 @@ class Window():
     
     def SwitchPage(self, page_id:int):
         if page_id == self.page_main.id:
-            # return
             self.page_main.lift()
+            # self.data_process.stop_send()
         elif page_id == self.page_debug.id:
-            # return
             self.page_debug.lift()
+            # self.data_process.stop_send()
         elif page_id == self.page_robot_cmd.id:
-            # return
             self.page_robot_cmd.lift()
+            self.data_process.start_send()
 
 
     ############################################################
