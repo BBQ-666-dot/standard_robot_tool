@@ -4,6 +4,8 @@
 
 from log_info import LogError , LogInfo , LogWarning
 import struct
+import time
+import threading
 from data_typedef import Imu_Data,Debug_Data,Robot_Info_Data,Robot_Cmd_Data
 from data_typedef import SEND_ID_ROBOT_CMD
 import lib.CRC8_CRC16 as crc
@@ -30,7 +32,23 @@ class Data_Process():
         self.robot_cmd_data = Robot_Cmd_Data()
         
         self.sending_data = False
-        return 
+        self.send_period = 0.005 # 发送周期(s)
+        self.stats = {
+            'rx_frames': 0,
+            'rx_errors': 0,
+            'tx_packets': 0,
+            'demo': False,
+            'replaying': False,
+            'ids': {},   # data_id -> {'count','last','period'}
+        }
+
+        # 录制/回放
+        self.recording = False
+        self.recorded = []      # [(t, raw_bytes), ...]
+        self.replaying = False
+        self.replay_thread = None
+        self.replay_speed = 1.0
+        return
 
     def start_send(self):
         self.sending_data = True
@@ -40,6 +58,44 @@ class Data_Process():
         self.sending_data = False
         return
 
+    def inject_imu(self, time_stamp, yaw, pitch, roll, yaw_vel, pitch_vel, roll_vel):
+        '''演示模式：注入一帧IMU数据'''
+        self.imu_data.update({
+            "time_stamp": time_stamp,
+            "yaw": yaw,
+            "pitch": pitch,
+            "roll": roll,
+            "yaw_vel": yaw_vel,
+            "pitch_vel": pitch_vel,
+            "roll_vel": roll_vel,
+        })
+        self._record_id_stat(0x02)
+        self.stats['rx_frames'] += 1
+        return
+
+    def inject_debug(self, time_stamp, datas:dict):
+        '''演示模式：注入一帧调试数据'''
+        self.debug_data.update({
+            "time_stamp": time_stamp,
+            "datas": dict(datas),
+        })
+        self._record_id_stat(0x01)
+        self.stats['rx_frames'] += 1
+
+    def _record_id_stat(self, data_id:int):
+        '''记录某个数据包id的接收统计(周期EMA/总数/最后时间)'''
+        now = time.time()
+        entry = self.stats['ids'].get(data_id)
+        if entry is None:
+            self.stats['ids'][data_id] = {'count': 1, 'last': now, 'period': 0.05}
+        else:
+            dt = now - entry['last']
+            if 0 < dt < 1.0:
+                entry['period'] = entry['period'] * 0.9 + dt * 0.1
+            entry['count'] += 1
+            entry['last'] = now
+        return
+
 ############################################################
 #  数据处理基本功能
 #  receive 对接收到的数据进行处理并存储
@@ -47,10 +103,17 @@ class Data_Process():
 #  clear 清空数据
 ############################################################
 
-    def receive(self,received_data:bytes):
+    def receive(self,received_data:bytes, from_replay:bool=False):
+        # 录制原始数据帧(回放产生的不再录)
+        if self.recording and (not from_replay):
+            self.recorded.append((time.time(), bytes(received_data)))
+
         # 解码帧头信息
         data_len = int(received_data[1])
         data_id = received_data[2]
+
+        # 通信统计(每个数据包id)
+        self._record_id_stat(data_id)
         if data_id == 0: # 
             pass
         elif data_id == 1: # Debug数据
@@ -200,4 +263,93 @@ class Data_Process():
     
     def clear(self):
         self.imu_data.clear()
+        return
+
+    ############################################################
+    #  录制 / 回放
+    #  start_record  开始录制接收到的原始帧
+    #  stop_record   停止录制, 返回录制帧数
+    #  save_record   保存录制到文件(.pbr)
+    #  load_record   从文件载入录制
+    #  start_replay  开始回放(按原始时间间隔)
+    #  stop_replay   停止回放
+    ############################################################
+    def start_record(self):
+        self.recorded = []
+        self.recording = True
+        LogInfo("开始录制数据(原始帧)")
+        return
+
+    def stop_record(self) -> int:
+        self.recording = False
+        count = len(self.recorded)
+        LogInfo(f"停止录制, 共 {count} 帧")
+        return count
+
+    def save_record(self, path:str) -> bool:
+        import pickle
+        try:
+            with open(path, 'wb') as f:
+                pickle.dump(self.recorded, f, protocol=pickle.HIGHEST_PROTOCOL)
+            LogInfo(f"录制已保存: {path} ({len(self.recorded)} 帧)")
+            return True
+        except Exception as e:
+            LogError(f"保存录制失败: {e}")
+            return False
+
+    def load_record(self, path:str):
+        import pickle
+        try:
+            with open(path, 'rb') as f:
+                frames = pickle.load(f)
+            LogInfo(f"录制已载入: {path} ({len(frames)} 帧)")
+            return frames
+        except Exception as e:
+            LogError(f"载入录制失败: {e}")
+            return []
+
+    def start_replay(self, frames:list) -> bool:
+        if self.replaying:
+            LogWarning("回放进行中")
+            return False
+        if not frames:
+            LogWarning("没有可回放的数据")
+            return False
+        self.replaying = True
+        self.stats['replaying'] = True
+        self.replay_thread = threading.Thread(target=self._replay_loop,
+                                              args=(frames,), daemon=True)
+        self.replay_thread.start()
+        LogInfo(f"开始回放({len(frames)} 帧, {self.replay_speed:.1f}x)")
+        return True
+
+    def stop_replay(self):
+        if self.replaying:
+            self.replaying = False
+            self.stats['replaying'] = False
+            LogInfo("停止回放")
+        return
+
+    def _replay_loop(self, frames):
+        t_begin = frames[0][0]
+        wall_begin = time.time()
+        for t, raw in frames:
+            if not self.replaying:
+                break
+            target = wall_begin + (t - t_begin) / max(0.1, self.replay_speed)
+            while self.replaying:
+                wait = target - time.time()
+                if wait <= 0:
+                    break
+                time.sleep(min(wait, 0.05))
+            if not self.replaying:
+                break
+            try:
+                self.receive(raw, from_replay=True)
+                self.stats['rx_frames'] += 1
+            except Exception:
+                pass
+        self.replaying = False
+        self.stats['replaying'] = False
+        LogInfo("回放结束")
         return

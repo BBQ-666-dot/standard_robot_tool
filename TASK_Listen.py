@@ -68,6 +68,23 @@ joystick_cmd = {
 
 use_cmd = 'keboard'
 
+# 键鼠/手柄控制总开关(可在上位机"机体控制"页关闭)
+INPUT_ENABLED = True
+
+def set_input_enabled(enabled:bool, robot_cmd:dict=None) -> None:
+    '''开关键鼠/手柄控制; 关闭时把控制量归零'''
+    global INPUT_ENABLED
+    INPUT_ENABLED = enabled
+    if (not enabled) and (robot_cmd is not None):
+        robot_cmd['speed_vector']['vx'] = 0
+        robot_cmd['speed_vector']['vy'] = 0
+        robot_cmd['speed_vector']['wz'] = 0
+        robot_cmd['gimbal']['yaw'] = 0
+        robot_cmd['gimbal']['pitch'] = 0
+        robot_cmd['shoot']['fire'] = 0
+        robot_cmd['shoot']['fric_on'] = 0
+    return
+
 class Input_Listener():
     def __init__(self, input_listener:dict,oprations:list, run_time:dict,robot_cmd:dict):
         self.input_listener = input_listener
@@ -116,6 +133,8 @@ class Input_Listener():
         if STOP_APP in self.oprations or ERROR in self.oprations:
             self.stop()
             return False
+        if not INPUT_ENABLED:
+            return
         if use_cmd == 'keboard':
             try:
                 if key.char == "w":
@@ -149,7 +168,8 @@ class Input_Listener():
         if STOP_APP in self.oprations or ERROR in self.oprations:
             self.stop()
             return False
-        
+        if not INPUT_ENABLED:
+            return
         if use_cmd == 'keboard':
             try:
                 if key.char == "w" or key.char == "s":
@@ -166,11 +186,9 @@ class Input_Listener():
         if STOP_APP in self.oprations or ERROR in self.oprations:
             self.stop()
             return False
-        
-        if pressed:
-            print(f'鼠标点击了 {button} 在位置 ({x}, {y})')
-        else:
-            print(f'鼠标释放了 {button} 在位置 ({x}, {y})')
+        if not INPUT_ENABLED:
+            return
+        return
 
     def on_move(self,x, y):
         global use_cmd
@@ -191,7 +209,7 @@ class Input_Listener():
         self.last_x = x
         self.last_y = y
         
-        if use_cmd == 'keboard':
+        if INPUT_ENABLED and use_cmd == 'keboard':
             self.robot_cmd["gimbal"]["yaw"] += dx * 0.01
             if self.robot_cmd["gimbal"]["yaw"] > math.pi:
                 self.robot_cmd["gimbal"]["yaw"] -= 2*math.pi
@@ -208,8 +226,9 @@ class Input_Listener():
         if STOP_APP in self.oprations or ERROR in self.oprations:
             self.stop()
             return False
-        
-        print(f'鼠标在 ({x}, {y}) 滚动了 {dx}, {dy}')
+        if not INPUT_ENABLED:
+            return
+        return
 
 class Joystick_Listener():
     def __init__(self,robot_cmd:dict) -> None:
@@ -217,6 +236,7 @@ class Joystick_Listener():
         
         self.listen = False
         self.joystick = None
+        self.last_found = None
         return
     
     def init_pygame(self):
@@ -227,24 +247,29 @@ class Joystick_Listener():
 
     def detect_joystick(self):
         global use_cmd
-        
-        if self.joystick == None:
-            # 重新初始化pygame.joystick模块
-            pygame.joystick.quit()
-            pygame.joystick.init()
-
-        joystick_count = pygame.joystick.get_count()
-        if joystick_count > 0:
-            if self.joystick == None:
-                self.joystick = pygame.joystick.Joystick(0)
-            # print(f"init：{self.joystick.get_init()}")
-            if self.joystick.get_init() == False:
-                self.joystick.init()
-            use_cmd = 'joystick'
-        else:
-            LogWarning("未检测到手柄！")
+        # 注意: 不要在这里调 pygame.joystick.quit()/init(), 开销巨大(>20%CPU)。
+        # pygame2(SDL2) 支持热插拔, get_count() 会实时反映设备变化。
+        try:
+            joystick_count = pygame.joystick.get_count()
+            if joystick_count > 0:
+                if self.joystick == None:
+                    self.joystick = pygame.joystick.Joystick(0)
+                    if self.joystick.get_init() == False:
+                        self.joystick.init()
+                use_cmd = 'joystick'
+                if self.last_found != True:
+                    LogInfo("检测到手柄，使用手柄控制")
+                    self.last_found = True
+            else:
+                if self.last_found != False:
+                    LogWarning("未检测到手柄，使用键鼠控制")
+                    self.last_found = False
+                self.joystick = None
+                use_cmd = 'keboard'
+        except Exception:
             self.joystick = None
             use_cmd = 'keboard'
+        return
 
     # 更新手柄数据的函数
     def update_joystick_data(self):
@@ -261,7 +286,7 @@ class Joystick_Listener():
         button_data = [self.joystick.get_button(i) for i in range(self.joystick.get_numbuttons())]
         button_text = "按钮状态：" + ", ".join([str(x) for x in button_data])
         
-        if use_cmd == 'joystick':
+        if INPUT_ENABLED and use_cmd == 'joystick':
             self.robot_cmd['speed_vector']['vx'] = self.joystick.get_axis(0) * MAX_VX
             self.robot_cmd['speed_vector']['vy'] = self.joystick.get_axis(1) * MAX_VY
             
@@ -294,13 +319,15 @@ def ListenJoystick(joystick_listener:Joystick_Listener,oprations:list):
     while True:
         if len(oprations)>0 and (oprations[0] == STOP_APP or (ERROR in oprations)):
             break
-        
+
+        # 每秒检测一次热插拔(开销≈0); 有手柄时以~50Hz更新数据
         if cnt % 50 == 0:
             joystick_listener.detect_joystick()
         cnt += 1
-        
-        joystick_listener.update_joystick_data()
-        time.sleep(0.01)
+
+        if joystick_listener.joystick is not None:
+            joystick_listener.update_joystick_data()
+        time.sleep(0.02)
     return
 
 def TASK_Listen(oprations:list, run_time:dict, robot_cmd:dict):

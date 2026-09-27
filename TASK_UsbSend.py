@@ -30,12 +30,14 @@ def TASK_UsbSend(usb:USB_Device, data_process:Data_Process, oprations:list, run_
         if data_process.sending_data:
             if usb.is_open:
                 data = data_process.send(SEND_ID_ROBOT_CMD)
-                usb.send(data)
+                if data is not None:
+                    usb.send(data)
+                    data_process.stats['tx_packets'] += 1
                 # print(data)
                 # print(len(data))
                 # print(current_time)
         
-        time.sleep(0.001)
+        time.sleep(data_process.send_period)
 
 
 if __name__ == '__main__':

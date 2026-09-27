@@ -2,6 +2,8 @@ import serial
 import serial.tools.list_ports
 import CRC8_CRC16 as crc
 from log_info import LogError , LogInfo , LogWarning
+import threading
+import time
 
 class USB_Device:
     def __init__(self):
@@ -13,6 +15,13 @@ class USB_Device:
         self.bytesize = 8    #字节大小  8
         self.stopbits = 1    #停止位    1
         self.parity   = "N"  #校验位 N－无校验，E－偶校验，O－奇校验
+        self.rx_bytes = 0    #接收字节计数
+        self.tx_bytes = 0    #发送字节计数
+
+        # 串口列表后台刷新(避免在GUI线程里枚举串口导致卡顿)
+        self._ports_cache = []
+        self._ports_lock = threading.Lock()
+        self._ports_thread_started = False
         
 ############################################################
 #  串口基本功能
@@ -28,7 +37,6 @@ class USB_Device:
         if(self.ser.isOpen()):
             self.is_open = True
             LogWarning("USB已经打开！")
-            LogError("USB打开失败！")
             return False
 
         self.ser.port=self.port         #端口
@@ -36,6 +44,8 @@ class USB_Device:
         self.ser.bytesize=self.bytesize #字节大小  8
         self.ser.stopbits=self.stopbits #停止位    1
         self.ser.parity=self.parity     #校验位 N－无校验，E－偶校验，O－奇校验
+        self.ser.timeout=0.05           #读超时(非阻塞读, 防止线程卡死)
+        self.ser.write_timeout=0.2      #写超时
         try:
             self.ser.open()
         except:
@@ -60,14 +70,24 @@ class USB_Device:
             return True
         
     def get(self) -> list:
-        ports = serial.tools.list_ports.comports()
-        if len(ports) == 0:
-            LogWarning("未找到USB设备！")
-        
-        for port in ports:
-            LogInfo(port)
-            
-        return ports
+        '''返回串口列表(后台线程每2s刷新缓存, 不阻塞GUI线程)'''
+        if not self._ports_thread_started:
+            self._ports_thread_started = True
+            threading.Thread(target=self._port_refresh_loop, daemon=True).start()
+
+        with self._ports_lock:
+            return list(self._ports_cache)
+
+    def _port_refresh_loop(self):
+        while True:
+            try:
+                ports = serial.tools.list_ports.comports()
+                cached = [(p.device, p.description) for p in ports]
+                with self._ports_lock:
+                    self._ports_cache = cached
+            except Exception:
+                pass
+            time.sleep(2)
 
     def modify(self, port:str, baudrate:int=9600, bytesize:int=8, stopbits:int=1, parity:str="N") -> bool:
         if self.is_open:
@@ -124,6 +144,7 @@ class USB_Device:
             LogError("USB读取数据失败！")
             self.is_open = False
             return b''
+        self.rx_bytes += len(data)
         return data
     
     def send(self, data:bytes) -> bool:
@@ -133,6 +154,7 @@ class USB_Device:
         
         try:
             self.ser.write(data)
+            self.tx_bytes += len(data)
             # LogInfo("USB发送数据成功！")
         except:
             self.ser.close()
